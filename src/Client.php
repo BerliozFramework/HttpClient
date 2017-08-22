@@ -23,6 +23,8 @@ use Berlioz\Core\OptionList;
 use Http\Client\HttpClient;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UriInterface;
 
 class Client implements HttpClient, AppAwareInterface
 {
@@ -88,7 +90,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Get options
+     * Get options.
      *
      * @return \Berlioz\Core\OptionList
      */
@@ -98,7 +100,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Get CURL options
+     * Get CURL options.
      *
      * @return array
      */
@@ -108,7 +110,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Set CURL options
+     * Set CURL options.
      *
      * Warning: you can't specify some CURL options :
      *     - CURLOPT_HTTP_VERSION
@@ -151,7 +153,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Set default headers
+     * Set default headers.
      *
      * @param array $headers
      * @param bool  $erase Erase if exists (default: true)
@@ -166,7 +168,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Set default header
+     * Set default header.
      *
      * @param string $name  Name
      * @param string $value Value
@@ -182,7 +184,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Log request and response
+     * Log request and response.
      *
      * @param \Psr\Http\Message\RequestInterface  $request
      * @param \Psr\Http\Message\ResponseInterface $response
@@ -259,7 +261,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Get history
+     * Get history.
      *
      * @param int|null $index History index (null for all, -1 for last)
      *
@@ -279,7 +281,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Get cookies manager
+     * Get cookies manager.
      *
      * @return \Berlioz\HttpClient\Cookies
      */
@@ -289,7 +291,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Parse headers
+     * Parse headers.
      *
      * @param string $headers      Raw headers
      * @param mixed  $reasonPhrase Reason phrase returned by reference
@@ -343,7 +345,7 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Init CURL options
+     * Init CURL options.
      *
      * @param \Psr\Http\Message\RequestInterface $request
      *
@@ -468,19 +470,181 @@ class Client implements HttpClient, AppAwareInterface
     }
 
     /**
-     * Request
+     * Request.
      *
-     * @param string $method
-     * @param string $uri
-     * @param array  $parameters Get parameters
+     * @param string                                   $method     Http method
+     * @param string|\Psr\Http\Message\UriInterface    $uri        Uri
+     * @param array                                    $parameters Get parameters
+     * @param string|\Psr\Http\Message\StreamInterface $body       Body
+     * @param array                                    $options    Options
+     *
+     * @option array "headers" Headers of request
      *
      * @return \Psr\Http\Message\ResponseInterface
      */
-    public function request(string $method, string $uri, array $parameters = [])
+    public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
     {
-        $uri = Uri::createFromString($uri);
-        $uri->withQuery(http_build_query($parameters));
+        // URI
+        if (!($uri instanceof UriInterface)) {
+            $uri = Uri::createFromString($uri);
+        }
 
-        return $this->sendRequest(new Request($method, $uri));
+        // Parameters
+        if (!is_null($parameters)) {
+            $uri = $uri->withQuery(http_build_query($parameters));
+        }
+
+        // Create request
+        $request = new Request($method, $uri);
+
+        // Body
+        if (!is_null($body)) {
+            if (!($body instanceof StreamInterface)) {
+                $stream = new Stream;
+                $stream->write($body);
+            } else {
+                $stream = $body;
+            }
+
+            $request = $request->withBody($stream);
+        }
+
+        // Options
+        {
+            // Headers
+            if (!empty($options['headers'])) {
+                foreach ($options['headers'] as $headerName => $headerValue) {
+                    $request = $request->withHeader($headerName, $headerValue);
+                }
+            }
+        }
+
+        return $this->sendRequest($request);
+    }
+
+    /**
+     * Get request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
+     * @param array                                 $parameters Get parameters
+     * @param array                                 $options    Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function get($uri, array $parameters = null, array $options = [])
+    {
+        return $this->request('GET', $uri, $parameters, null, $options);
+    }
+
+    /**
+     * Post request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
+     * @param string|StreamInterface                $body    Body of request
+     * @param array                                 $options Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function post($uri, $body = null, array $options = [])
+    {
+        return $this->request('POST', $uri, null, $body, $options);
+    }
+
+    /**
+     * Patch request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
+     * @param string|StreamInterface                $body    Body of request
+     * @param array                                 $options Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function patch($uri, $body = null, array $options = [])
+    {
+        return $this->request('PATCH', $uri, null, $body, $options);
+    }
+
+    /**
+     * Put request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
+     * @param string|StreamInterface                $body    Body of request
+     * @param array                                 $options Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function put($uri, $body = null, array $options = [])
+    {
+        return $this->request('PUT', $uri, null, $body, $options);
+    }
+
+    /**
+     * Delete request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
+     * @param array                                 $parameters Get parameters
+     * @param array                                 $options    Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function delete($uri, array $parameters = [], array $options = [])
+    {
+        return $this->request('DELETE', $uri, $parameters, null, $options);
+    }
+
+    /**
+     * Options request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
+     * @param array                                 $parameters Get parameters
+     * @param array                                 $options    Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function options($uri, array $parameters = [], array $options = [])
+    {
+        return $this->request('OPTIONS', $uri, $parameters, null, $options);
+    }
+
+    /**
+     * Head request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
+     * @param array                                 $parameters Get parameters
+     * @param array                                 $options    Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function head($uri, array $parameters = [], array $options = [])
+    {
+        return $this->request('HEAD', $uri, $parameters, null, $options);
+    }
+
+    /**
+     * Connect request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
+     * @param string|StreamInterface                $body    Body of request
+     * @param array                                 $options Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function connect($uri, $body, array $options = [])
+    {
+        return $this->request('CONNECT', $uri, null, $body, $options);
+    }
+
+    /**
+     * Trace request.
+     *
+     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
+     * @param array                                 $parameters Get parameters
+     * @param array                                 $options    Options
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function trace($uri, array $parameters = [], array $options = [])
+    {
+        return $this->request('TRACE', $uri, $parameters, null, $options);
     }
 }
