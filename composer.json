@@ -16,6 +16,8 @@
     }
   },
   "require": {
+    "php": ">=7.0",
+    "lib-curl": "*",
     "berlioz/core": "@dev",
     "psr/http-message": "~1.0",
     "php-http/httplug": "~1.1"
