@@ -14,6 +14,7 @@ namespace Berlioz\HttpClient;
 
 use Berlioz\Core\App\AppAwareInterface;
 use Berlioz\Core\App\AppAwareTrait;
+use Berlioz\Core\ConfigInterface;
 use Berlioz\Core\Http\Request;
 use Berlioz\Core\Http\Response;
 use Berlioz\Core\Http\Stream;
@@ -36,18 +37,24 @@ class Client implements HttpClient, AppAwareInterface
     private $history;
     /** @var \Berlioz\HttpClient\Cookies Cookies */
     private $cookies;
+    /** @var resource File log pointer */
+    private $fp;
 
     /**
      * Client constructor.
      *
-     * @param \Berlioz\Core\OptionList|null $options
+     * @param \Berlioz\Core\OptionList|array|null $options
+     *
+     * @option int    "followLocationLimit" Limit location to follow
+     * @option string "logFile"             Log file name (only file name, not path)
      */
-    public function __construct(OptionList $options = null)
+    public function __construct($options = null)
     {
         // Default options
-        $this->options = new OptionList(['followLocationLimit' => 5]);
+        $this->options = new OptionList(['followLocationLimit' => 5,
+                                         'logFile'             => null]);
         if (!is_null($options)) {
-            $this->options->mergeWith($options);
+            $this->options->setOptions($options);
         }
 
         // Init CURL options
@@ -67,6 +74,17 @@ class Client implements HttpClient, AppAwareInterface
 
         // Init cookies
         $this->cookies = new Cookies;
+    }
+
+    /**
+     * Client destructor.
+     */
+    public function __destruct()
+    {
+        // Close resource
+        if (is_resource($this->fp)) {
+            @fclose($this->fp);
+        }
     }
 
     /**
@@ -173,6 +191,71 @@ class Client implements HttpClient, AppAwareInterface
     {
         $this->history[] = ['request'  => $request,
                             'response' => $response];
+
+        // Log to file ?
+        if (!$this->getOptions()->is_null('logFile')) {
+            $fileName = $this->getApp()->getConfig()->getDirectory(ConfigInterface::DIR_VAR_LOGS) .
+                        '/' .
+                        basename($this->getOptions()->get('logFile'));
+
+            if (is_resource($this->fp) || is_resource($this->fp = @fopen($fileName, 'a'))) {
+                $str = '###### ' . date('c') . ' ######' . PHP_EOL . PHP_EOL .
+                       '>>>>>> Request' . PHP_EOL . PHP_EOL;
+
+                // Request
+                {
+                    // Main header
+                    $str .= sprintf('%s %s HTTP/%s' . PHP_EOL .
+                                    'Host: %s' . PHP_EOL,
+                                    $request->getMethod(),
+                                    $request->getUri()->getPath() . (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
+                                    $request->getProtocolVersion(),
+                                    $request->getUri()->getHost());
+
+                    // Headers
+                    foreach ($request->getHeaders() as $key => $values) {
+                        foreach ($values as $value) {
+                            $str .= sprintf('%s: %s' . PHP_EOL, $key, $value);
+                        }
+                    }
+
+                    // Body
+                    $str .= PHP_EOL .
+                            ($request->getBody()->getSize() > 0 ? $request->getBody() : 'Empty body') .
+                            PHP_EOL .
+                            PHP_EOL;
+                }
+
+                $str .= '<<<<<< Response' . PHP_EOL . PHP_EOL;
+
+                // Response
+                {
+                    // Main header
+                    $str .= sprintf('HTTP/%s %s %s' . PHP_EOL,
+                                    $response->getProtocolVersion(),
+                                    $response->getStatusCode(),
+                                    $response->getReasonPhrase());
+
+                    // Headers
+                    foreach ($response->getHeaders() as $key => $values) {
+                        foreach ($values as $value) {
+                            $str .= sprintf('%s: %s' . PHP_EOL, $key, $value);
+                        }
+                    }
+
+                    // Body
+                    $str .= PHP_EOL .
+                            ($response->getBody()->getSize() > 0 ? $response->getBody() : 'Empty body') .
+                            PHP_EOL .
+                            PHP_EOL;
+                }
+
+                $str .= PHP_EOL . PHP_EOL;
+
+                // Write into logs
+                @fwrite($this->fp, $str);
+            }
+        }
     }
 
     /**
