@@ -85,7 +85,11 @@ class Cookies
             $request = $request->withoutHeader('Cookie');
         }
 
-        return $request->withAddedHeader('Cookie', $this->getCookiesForUri($request->getUri()));
+        if (!empty($strCookies = $this->getCookiesForUri($request->getUri()))) {
+            return $request->withAddedHeader('Cookie', $strCookies);
+        } else {
+            return $request;
+        }
     }
 
     /**
