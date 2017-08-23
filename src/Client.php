@@ -207,12 +207,10 @@ class Client implements HttpClient, AppAwareInterface
                 // Request
                 {
                     // Main header
-                    $str .= sprintf('%s %s HTTP/%s' . PHP_EOL .
-                                    'Host: %s' . PHP_EOL,
+                    $str .= sprintf('%s %s HTTP/%s' . PHP_EOL,
                                     $request->getMethod(),
                                     $request->getUri()->getPath() . (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
-                                    $request->getProtocolVersion(),
-                                    $request->getUri()->getHost());
+                                    $request->getProtocolVersion());
 
                     // Headers
                     foreach ($request->getHeaders() as $key => $values) {
