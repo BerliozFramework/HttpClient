@@ -229,7 +229,7 @@ class Client implements HttpClient, AppAwareInterface
                 $str .= '<<<<<< Response' . PHP_EOL . PHP_EOL;
 
                 // Response
-                {
+                if (!is_null($response)) {
                     // Main header
                     $str .= sprintf('HTTP/%s %s %s' . PHP_EOL,
                                     $response->getProtocolVersion(),
@@ -246,6 +246,10 @@ class Client implements HttpClient, AppAwareInterface
                     // Body
                     $str .= PHP_EOL .
                             ($response->getBody()->getSize() > 0 ? $response->getBody() : 'Empty body') .
+                            PHP_EOL .
+                            PHP_EOL;
+                } else {
+                    $str .= 'No response' .
                             PHP_EOL .
                             PHP_EOL;
                 }
