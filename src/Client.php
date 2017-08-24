@@ -131,7 +131,7 @@ class Client implements HttpClient, AppAwareInterface
     public function setCurlOptions(array $curlOptions, bool $erase = false)
     {
         if (!$erase) {
-            $curlOptions = array_merge($this->curlOptions, $curlOptions);
+            $curlOptions = array_replace($this->curlOptions, $curlOptions);
         }
 
         // Remove reserved CURL options
