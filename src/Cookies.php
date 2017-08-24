@@ -143,8 +143,8 @@ class Cookies
 
         // Make cookie
         $cookie['name'] = $cookieTmp['name'];
-        $cookie['value'] = $cookieTmp['value'] ? str_replace(' ', '+', $cookieTmp['value']) : null;
-        $cookie['expires'] = $cookieTmp['max-age'] ? time() + $cookieTmp['max-age'] : ($cookieTmp['expires'] ? strtotime($cookieTmp['expires']) : null);
+        $cookie['value'] = isset($cookieTmp['value']) ? str_replace(' ', '+', $cookieTmp['value']) : null;
+        $cookie['expires'] = isset($cookieTmp['max-age']) ? time() + $cookieTmp['max-age'] : (isset($cookieTmp['expires']) ? strtotime($cookieTmp['expires']) : null);
         $cookie['path'] = $cookieTmp['path'] ?? ($uri ? $uri->getPath() : null);
         $cookie['domain'] = $cookieTmp['domain'] ?? ($uri ? $uri->getHost() : null);
         $cookie['domain'] = substr($cookie['domain'], 0, 1) == '.' ? $cookie['domain'] : '.' . $cookie['domain'];
