@@ -452,11 +452,11 @@ class Client implements HttpClient, AppAwareInterface
 
                 // Follow location ?
                 $followLocation = false;
-                if (!empty($newLocation = curl_getinfo($ch, CURLOPT_FOLLOWLOCATION))) {
+                if (!empty($newLocation = $response->getHeader('Location'))) {
                     if ($followLocationCounter++ <= $this->getOptions()->get('followLocationLimit')) {
                         $followLocation = true;
                         /** @var \Psr\Http\Message\RequestInterface $request */
-                        $request = $request->withUri(Uri::createFromString($newLocation));
+                        $request = $request->withUri(Uri::createFromString($newLocation[0]));
                         $request = $request->withoutHeader('Referer');
                         $request = $request->withAddedHeader('Referer', (string) $request->getUri());
                     } else {
