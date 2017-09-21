@@ -15,6 +15,7 @@ namespace Berlioz\HttpClient;
 use Berlioz\Core\App\AppAwareInterface;
 use Berlioz\Core\App\AppAwareTrait;
 use Berlioz\Core\ConfigInterface;
+use Berlioz\Core\Exception\BerliozException;
 use Berlioz\Core\Http\Request;
 use Berlioz\Core\Http\Response;
 use Berlioz\Core\Http\Stream;
@@ -85,7 +86,9 @@ class Client implements HttpClient, AppAwareInterface
     {
         // Close resource
         if (is_resource($this->fp)) {
-            @fclose($this->fp);
+            if (!fclose($this->fp)) {
+                throw new BerliozException('Unable to close log file pointer');
+            }
         }
     }
 
