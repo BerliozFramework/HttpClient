@@ -27,6 +27,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 
+// Constants
+defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
+
 class Client implements HttpClient, AppAwareInterface
 {
     use AppAwareTrait;
@@ -81,6 +84,8 @@ class Client implements HttpClient, AppAwareInterface
 
     /**
      * Client destructor.
+     *
+     * @throws \Berlioz\Core\Exception\BerliozException if unable to close log file pointer
      */
     public function __destruct()
     {
@@ -191,6 +196,8 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @param \Psr\Http\Message\RequestInterface  $request
      * @param \Psr\Http\Message\ResponseInterface $response
+     *
+     * @throws \Berlioz\Core\Exception\BerliozException if unable to write logs
      */
     protected function log(RequestInterface $request, ResponseInterface $response = null)
     {
@@ -199,7 +206,7 @@ class Client implements HttpClient, AppAwareInterface
 
         // Log to file ?
         if (!$this->getOptions()->is_null('logFile')) {
-            $fileName = $this->getApp()->getConfig()->getDirectory(ConfigInterface::DIR_VAR_LOGS) .
+            $fileName = ($this->getApp()->getConfig()->getDirectory(ConfigInterface::DIR_VAR_LOGS) ?? '') .
                         '/' .
                         basename($this->getOptions()->get('logFile'));
 
@@ -260,7 +267,9 @@ class Client implements HttpClient, AppAwareInterface
                 $str .= PHP_EOL . PHP_EOL;
 
                 // Write into logs
-                @fwrite($this->fp, $str);
+                if (fwrite($this->fp, $str) === false) {
+                    throw new BerliozException('Unable to write logs');
+                }
             }
         }
     }
