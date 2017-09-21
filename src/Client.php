@@ -149,10 +149,13 @@ class Client implements HttpClient, AppAwareInterface
                             CURLOPT_HEADER,
                             CURLINFO_HEADER_OUT,
                             CURLOPT_HTTPHEADER,
-                            CURLOPT_FOLLOWLOCATION,
                             CURLOPT_RETURNTRANSFER,
                             CURLOPT_POST,
                             CURLOPT_POSTFIELDS];
+        if (defined('CURLOPT_FOLLOWLOCATION')) {
+            $reservedOptions[] = CURLOPT_FOLLOWLOCATION;
+        }
+
         foreach ($reservedOptions as $reservedOption) {
             unset($curlOptions[$reservedOption]);
         }
@@ -401,7 +404,9 @@ class Client implements HttpClient, AppAwareInterface
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         }
 
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        if (defined('CURLOPT_FOLLOWLOCATION')) {
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        }
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
         if ($request->getBody()->getSize() > 0) {
