@@ -455,9 +455,9 @@ class Client implements HttpClient, AppAwareInterface
                     $stream->write((string) substr($content, curl_getinfo($ch, CURLINFO_HEADER_SIZE)));
 
                     // Construct object
-                    $response = new Response(curl_getinfo($ch, CURLINFO_HTTP_CODE),
+                    $response = new Response($stream,
+                                             curl_getinfo($ch, CURLINFO_HTTP_CODE),
                                              $headers,
-                                             $stream,
                                              $reasonPhrase);
 
                     // Parse response cookies
