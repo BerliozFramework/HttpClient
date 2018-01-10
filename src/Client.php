@@ -428,6 +428,15 @@ class Client implements HttpClient, AppAwareInterface
         if (function_exists('curl_version')) {
             $followLocationCounter = 0;
 
+            // Add default headers
+            if (is_array($this->defaultHeaders)) {
+                foreach ($this->defaultHeaders as $headerName => $headerValue) {
+                    if (!$request->hasHeader($headerName)) {
+                        $request = $request->withHeader($headerName, $headerValue);
+                    }
+                }
+            }
+
             do {
                 // Init CURL
                 $request = $this->getCookies()->addCookiesToRequest($request);
@@ -500,6 +509,8 @@ class Client implements HttpClient, AppAwareInterface
      * @option array "headers" Headers of request
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
     {
@@ -549,6 +560,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function get($uri, array $parameters = null, array $options = [])
     {
@@ -563,6 +576,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function post($uri, $body = null, array $options = [])
     {
@@ -577,6 +592,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function patch($uri, $body = null, array $options = [])
     {
@@ -591,6 +608,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function put($uri, $body = null, array $options = [])
     {
@@ -605,6 +624,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function delete($uri, array $parameters = [], array $options = [])
     {
@@ -619,6 +640,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function options($uri, array $parameters = [], array $options = [])
     {
@@ -633,6 +656,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function head($uri, array $parameters = [], array $options = [])
     {
@@ -647,6 +672,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function connect($uri, $body, array $options = [])
     {
@@ -661,6 +688,8 @@ class Client implements HttpClient, AppAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function trace($uri, array $parameters = [], array $options = [])
     {
