@@ -10,30 +10,30 @@
  * file that was distributed with this source code, to the root.
  */
 
-namespace Berlioz\HttpClient;
+namespace Berlioz\Http\Client;
 
-use Berlioz\Core\App\AppAwareInterface;
-use Berlioz\Core\App\AppAwareTrait;
-use Berlioz\Core\ConfigInterface;
-use Berlioz\Core\Exception\BerliozException;
-use Berlioz\Core\Http\Request;
-use Berlioz\Core\Http\Response;
-use Berlioz\Core\Http\Stream;
-use Berlioz\Core\Http\Uri;
-use Berlioz\Core\OptionList;
+use Berlioz\Http\Client\Exception\HttpClientException;
+use Berlioz\Http\Message\Request;
+use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\Stream;
+use Berlioz\Http\Message\Uri;
+use Http\Client\Exception\HttpException;
+use Http\Client\Exception\RequestException;
 use Http\Client\HttpClient;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 
 // Constants
 defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
 
-class Client implements HttpClient, AppAwareInterface
+class Client implements HttpClient, LoggerAwareInterface
 {
-    use AppAwareTrait;
-    /** @var \Berlioz\Core\OptionList Options */
+    use LoggerAwareTrait;
+    /** @var array Options */
     private $options;
     /** @var array CURL options */
     private $curlOptions;
@@ -41,7 +41,7 @@ class Client implements HttpClient, AppAwareInterface
     private $defaultHeaders;
     /** @var array History */
     private $history;
-    /** @var \Berlioz\HttpClient\Cookies Cookies */
+    /** @var \Berlioz\Http\Client\Cookies Cookies */
     private $cookies;
     /** @var resource File log pointer */
     private $fp;
@@ -49,19 +49,18 @@ class Client implements HttpClient, AppAwareInterface
     /**
      * Client constructor.
      *
-     * @param \Berlioz\Core\OptionList|array|null $options
+     * @param array $options
      *
      * @option int    "followLocationLimit" Limit location to follow
      * @option string "logFile"             Log file name (only file name, not path)
      */
-    public function __construct($options = null)
+    public function __construct($options = [])
     {
         // Default options
-        $this->options = new OptionList(['followLocationLimit' => 5,
-                                         'logFile'             => null]);
-        if (!is_null($options)) {
-            $this->options->setOptions($options);
-        }
+        $this->options = ['followLocationLimit' => 5,
+                          'logFile'             => null,
+                          'exceptions'          => true];
+        $this->options = array_merge($this->options, $options);
 
         // Init CURL options
         $this->curlOptions = [];
@@ -85,26 +84,16 @@ class Client implements HttpClient, AppAwareInterface
     /**
      * Client destructor.
      *
-     * @throws \Berlioz\Core\Exception\BerliozException if unable to close log file pointer
+     * @throws \Berlioz\Http\Client\Exception\HttpClientException if unable to close log file pointer
      */
     public function __destruct()
     {
         // Close resource
         if (is_resource($this->fp)) {
             if (!fclose($this->fp)) {
-                throw new BerliozException('Unable to close log file pointer');
+                throw new HttpClientException('Unable to close log file pointer');
             }
         }
-    }
-
-    /**
-     * Get options.
-     *
-     * @return \Berlioz\Core\OptionList
-     */
-    public function getOptions(): OptionList
-    {
-        return $this->options;
     }
 
     /**
@@ -200,20 +189,34 @@ class Client implements HttpClient, AppAwareInterface
      * @param \Psr\Http\Message\RequestInterface  $request
      * @param \Psr\Http\Message\ResponseInterface $response
      *
-     * @throws \Berlioz\Core\Exception\BerliozException if unable to write logs
+     * @throws \Berlioz\Http\Client\Exception\HttpClientException if unable to write logs
      */
     protected function log(RequestInterface $request, ResponseInterface $response = null)
     {
         $this->history[] = ['request'  => $request,
                             'response' => $response];
 
-        // Log to file ?
-        if (!$this->getOptions()->is_null('logFile')) {
-            $fileName = ($this->getApp()->getConfig()->getDirectory(ConfigInterface::DIR_VAR_LOGS) ?? '') .
-                        '/' .
-                        basename($this->getOptions()->get('logFile'));
+        // Logger
+        if (!empty($this->logger)) {
+            $logLevel = 'info';
+            if (!$response || intval(substr((string) $response->getStatusCode(), 0, 1)) != 2) {
+                $logLevel = 'warning';
+            }
 
-            if (is_resource($this->fp) || is_resource($this->fp = @fopen($fileName, 'a'))) {
+            $this->logger->log($logLevel,
+                               sprintf('%s / Request %s to %s, response %s', __METHOD__,
+                                       $request->getMethod(),
+                                       $request->getUri(),
+                                       $response ?
+                                           sprintf('%d (%s)',
+                                                   $response->getStatusCode(),
+                                                   $response->getReasonPhrase()) :
+                                           'NONE'));
+        }
+
+        // Log all detail to file ?
+        if (!empty($this->options['logFile'])) {
+            if (is_resource($this->fp) || is_resource($this->fp = @fopen($this->options['logFile'], 'a'))) {
                 $str = '###### ' . date('c') . ' ######' . PHP_EOL . PHP_EOL .
                        '>>>>>> Request' . PHP_EOL . PHP_EOL;
 
@@ -271,7 +274,7 @@ class Client implements HttpClient, AppAwareInterface
 
                 // Write into logs
                 if (fwrite($this->fp, $str) === false) {
-                    throw new BerliozException('Unable to write logs');
+                    throw new HttpClientException('Unable to write logs');
                 }
             }
         }
@@ -300,7 +303,7 @@ class Client implements HttpClient, AppAwareInterface
     /**
      * Get cookies manager.
      *
-     * @return \Berlioz\HttpClient\Cookies
+     * @return \Berlioz\Http\Client\Cookies
      */
     public function getCookies(): Cookies
     {
@@ -427,6 +430,7 @@ class Client implements HttpClient, AppAwareInterface
     {
         if (function_exists('curl_version')) {
             $followLocationCounter = 0;
+            $originalRequest = $request;
 
             // Add default headers
             if (is_array($this->defaultHeaders)) {
@@ -450,7 +454,7 @@ class Client implements HttpClient, AppAwareInterface
                     // Log request
                     $this->log($request);
 
-                    throw new \Exception(sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), curl_errno($ch));
+                    throw new HttpClientException(sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), curl_errno($ch));
                 }
 
                 // Response
@@ -479,21 +483,30 @@ class Client implements HttpClient, AppAwareInterface
                 // Follow location ?
                 $followLocation = false;
                 if (!empty($newLocation = $response->getHeader('Location'))) {
-                    if ($followLocationCounter++ <= $this->getOptions()->get('followLocationLimit')) {
+                    if ($followLocationCounter++ <= ($this->options['followLocationLimit'] ?? 5)) {
                         $followLocation = true;
                         /** @var \Psr\Http\Message\RequestInterface $request */
                         $request = $request->withUri(Uri::createFromString($newLocation[0]));
                         $request = $request->withoutHeader('Referer');
                         $request = $request->withAddedHeader('Referer', (string) $request->getUri());
                     } else {
-                        throw new \HttpRuntimeException('Too many redirection from host');
+                        throw new RequestException('Too many redirection from host', $originalRequest);
                     }
                 }
             } while ($followLocation);
 
+            // Exceptions if error?
+            if ($this->options['exceptions']) {
+                if (!$response || intval(substr((string) $response->getStatusCode(), 0, 1)) != 2) {
+                    throw new HttpException(sprintf('%d - %s', $response->getStatusCode(), $response->getReasonPhrase()),
+                                            $originalRequest,
+                                            $response);
+                }
+            }
+
             return $response;
         } else {
-            throw new \Exception('CURL module required for HTTP Client');
+            throw new HttpClientException('CURL module required for HTTP Client');
         }
     }
 
@@ -510,7 +523,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
     {
@@ -561,7 +573,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function get($uri, array $parameters = null, array $options = [])
     {
@@ -577,7 +588,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function post($uri, $body = null, array $options = [])
     {
@@ -593,7 +603,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function patch($uri, $body = null, array $options = [])
     {
@@ -609,7 +618,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function put($uri, $body = null, array $options = [])
     {
@@ -625,7 +633,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function delete($uri, array $parameters = [], array $options = [])
     {
@@ -641,7 +648,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function options($uri, array $parameters = [], array $options = [])
     {
@@ -657,7 +663,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function head($uri, array $parameters = [], array $options = [])
     {
@@ -673,7 +678,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function connect($uri, $body, array $options = [])
     {
@@ -689,7 +693,6 @@ class Client implements HttpClient, AppAwareInterface
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Http\Client\Exception If an error happens during processing the request.
-     * @throws \Exception             If processing the request is impossible (eg. bad configuration).
      */
     public function trace($uri, array $parameters = [], array $options = [])
     {

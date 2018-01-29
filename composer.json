@@ -12,15 +12,15 @@
   ],
   "autoload": {
     "psr-4": {
-      "Berlioz\\HttpClient\\": "src/"
+      "Berlioz\\Http\\Client\\": "src/"
     }
   },
   "require": {
     "php": ">=7.1",
     "lib-curl": "*",
-    "berlioz/core": "@dev",
-    "psr/http-message": "~1.0",
-    "php-http/httplug": "~1.1"
+    "berlioz/http-message": "@dev",
+    "php-http/httplug": "~1.1",
+    "psr/log": "1.0.2"
   },
   "require-dev": {
     "phpunit/phpunit": "~6.3"

@@ -10,7 +10,7 @@
  * file that was distributed with this source code, to the root.
  */
 
-namespace Berlioz\HttpClient;
+namespace Berlioz\Http\Client;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
