@@ -43,7 +43,7 @@ class Client implements HttpClient, LoggerAwareInterface
     private $history;
     /** @var \Berlioz\Http\Client\Cookies Cookies */
     private $cookies;
-    /** @var resource File log pointer */
+    /** @var resource|false File log pointer */
     private $fp;
 
     /**
@@ -433,11 +433,9 @@ class Client implements HttpClient, LoggerAwareInterface
             $originalRequest = $request;
 
             // Add default headers
-            if (is_array($this->defaultHeaders)) {
-                foreach ($this->defaultHeaders as $headerName => $headerValue) {
-                    if (!$request->hasHeader($headerName)) {
-                        $request = $request->withHeader($headerName, $headerValue);
-                    }
+            foreach ($this->defaultHeaders as $headerName => $headerValue) {
+                if (!$request->hasHeader($headerName)) {
+                    $request = $request->withHeader($headerName, $headerValue);
                 }
             }
 
@@ -471,7 +469,7 @@ class Client implements HttpClient, LoggerAwareInterface
                     $response = new Response($stream,
                                              curl_getinfo($ch, CURLINFO_HTTP_CODE),
                                              $headers,
-                                             $reasonPhrase);
+                                             $reasonPhrase ?? '');
 
                     // Parse response cookies
                     $this->getCookies()->addCookiesFromResponse($request->getUri(), $response);
@@ -527,7 +525,7 @@ class Client implements HttpClient, LoggerAwareInterface
     public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
     {
         // URI
-        if (!($uri instanceof UriInterface)) {
+        if (!$uri instanceof UriInterface) {
             $uri = Uri::createFromString($uri);
         }
 
