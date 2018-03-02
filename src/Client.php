@@ -463,7 +463,16 @@ class Client implements HttpClient, LoggerAwareInterface
 
                     // Body
                     $stream = new Stream();
-                    $stream->write((string) substr($content, curl_getinfo($ch, CURLINFO_HEADER_SIZE)));
+                    $streamData = substr($content, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
+                    switch ($headers['Content-Encoding'] ?? null) {
+                        case 'gzip':
+                            $streamData = gzdecode(trim($streamData));
+                            break;
+                        case 'deflate':
+                            $streamData = gzinflate(trim($streamData));
+                            break;
+                    }
+                    $stream->write((string) $streamData);
 
                     // Construct object
                     $response = new Response($stream,
