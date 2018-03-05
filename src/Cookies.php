@@ -40,29 +40,31 @@ class Cookies
     {
         $rawCookies = [];
 
-        foreach ($this->cookies as $cookie) {
-            // Good domain ?
-            if (empty($cookie['domain']) || empty($uri->getHost()) || $cookie['domain'] == $uri->getHost()) {
-                $domainValid = true;
-            } else {
-                if (substr($uri->getHost(), 0 - mb_strlen($cookie['domain'])) == $cookie['domain']) {
+        foreach ($this->cookies as $domain => $cookies) {
+            foreach ($cookies as $cookie) {
+                // Good domain ?
+                if (empty($cookie['domain']) || empty($uri->getHost()) || $cookie['domain'] == $uri->getHost()) {
                     $domainValid = true;
                 } else {
-                    if (substr($cookie['domain'], 1) == $uri->getHost()) {
+                    if (substr($uri->getHost(), 0 - mb_strlen($cookie['domain'])) == $cookie['domain']) {
                         $domainValid = true;
                     } else {
-                        $domainValid = false;
+                        if (substr($cookie['domain'], 1) == $uri->getHost()) {
+                            $domainValid = true;
+                        } else {
+                            $domainValid = false;
+                        }
                     }
                 }
-            }
 
-            // Domain valid ?
-            if ($domainValid) {
-                // Valid expiration ?
-                if ($cookie['expires'] == 0 && $cookie['expires'] >= time()) {
-                    // Valid path ?
-                    if (empty($cookie['path']) || substr($uri->getPath(), 0 - mb_strlen($cookie['path'])) == $cookie['path']) {
-                        $rawCookies[] = $cookie['name'] . "=" . str_replace("\0", "%00", $cookie['value']);
+                // Domain valid ?
+                if ($domainValid) {
+                    // Valid expiration ?
+                    if ($cookie['expires'] == 0 || $cookie['expires'] >= time()) {
+                        // Valid path ?
+                        if (empty($cookie['path']) || substr($uri->getPath(), 0 - mb_strlen($cookie['path'])) == $cookie['path']) {
+                            $rawCookies[] = $cookie['name'] . "=" . str_replace("\0", "%00", $cookie['value']);
+                        }
                     }
                 }
             }
