@@ -466,7 +466,7 @@ class Client implements HttpClient, LoggerAwareInterface
                     $streamData = substr($content, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
                     if (isset($headers['Content-Encoding'])) {
                         if (in_array('gzip', $headers['Content-Encoding'])) {
-                            $streamData = gzdecode(trim($streamData));
+                            $streamData = gzdecode($streamData);
                         } elseif (in_array('deflate', $headers['Content-Encoding'])) {
                             $streamData = gzinflate(trim($streamData));
                         }
