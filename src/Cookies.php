@@ -62,7 +62,7 @@ class Cookies
                     // Valid expiration ?
                     if ($cookie['expires'] == 0 || $cookie['expires'] >= time()) {
                         // Valid path ?
-                        if (empty($cookie['path']) || substr($uri->getPath(), 0 - mb_strlen($cookie['path'])) == $cookie['path']) {
+                        if (empty($cookie['path']) || substr($uri->getPath(), 0, mb_strlen($cookie['path'])) == $cookie['path']) {
                             $rawCookies[] = $cookie['name'] . "=" . str_replace("\0", "%00", $cookie['value']);
                         }
                     }
