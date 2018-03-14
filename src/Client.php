@@ -492,7 +492,11 @@ class Client implements HttpClient, LoggerAwareInterface
                     if ($followLocationCounter++ <= ($this->options['followLocationLimit'] ?? 5)) {
                         $followLocation = true;
 
-                        $request = new Request(Request::HTTP_METHOD_GET, Uri::createFromString($newLocation[0]));
+                        if(empty($redirectUrl = curl_getinfo($ch)['redirect_url'])) {
+                            $redirectUrl = $newLocation[0];
+                        }
+
+                        $request = new Request(Request::HTTP_METHOD_GET, Uri::createFromString($redirectUrl));
                         $request = $request->withHeader('Referer', (string) $request->getUri());
                     } else {
                         throw new RequestException('Too many redirection from host', $originalRequest);
