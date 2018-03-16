@@ -134,7 +134,7 @@ class Cookies
             function (&$value) {
                 $value = explode('=', $value, 2);
                 $value = array_map('trim', $value);
-                $value[0] = mb_strtolower($value[0]);
+                $value[0] = $value[0];
                 $value[1] = $value[1] ?? null;
             }
         );
@@ -142,6 +142,7 @@ class Cookies
         $cookieTmp[] = ['value', $cookieTmp[0][1]];
         unset($cookieTmp[0]);
         $cookieTmp = array_column($cookieTmp, 1, 0);
+        $cookieTmp = array_change_key_case($cookieTmp, CASE_LOWER);
 
         // Make cookie
         $cookie['name'] = $cookieTmp['name'];
