@@ -492,7 +492,7 @@ class Client implements HttpClient, LoggerAwareInterface
                     if ($followLocationCounter++ <= ($this->options['followLocationLimit'] ?? 5)) {
                         $followLocation = true;
 
-                        if(empty($redirectUrl = curl_getinfo($ch)['redirect_url'])) {
+                        if (empty($redirectUrl = curl_getinfo($ch)['redirect_url'])) {
                             $redirectUrl = $newLocation[0];
                         }
 
