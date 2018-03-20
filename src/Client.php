@@ -496,8 +496,14 @@ class Client implements HttpClient, LoggerAwareInterface
                             $redirectUrl = $newLocation[0];
                         }
 
-                        $request = new Request(Request::HTTP_METHOD_GET, Uri::createFromString($redirectUrl));
-                        $request = $request->withHeader('Referer', (string) $request->getUri());
+                        // Reset request for redirection, but keeps headers
+                        $request = $request->withMethod(Request::HTTP_METHOD_GET)
+                                           ->withHeader('Referer', (string) $request->getUri())
+                                           ->withUri(Uri::createFromString($redirectUrl))
+                                           ->withBody(new Stream);
+
+                        // Add cookies to the new request
+                        $request = $this->getCookies()->addCookiesToRequest($request);
                     } else {
                         throw new RequestException('Too many redirection from host', $originalRequest);
                     }
