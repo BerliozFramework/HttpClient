@@ -276,6 +276,8 @@ class Client implements HttpClient, LoggerAwareInterface
                 if (fwrite($this->fp, $str) === false) {
                     throw new HttpClientException('Unable to write logs');
                 }
+
+                fclose($this->fp);
             }
         }
     }
