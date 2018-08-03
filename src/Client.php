@@ -88,12 +88,7 @@ class Client implements HttpClient, LoggerAwareInterface
      */
     public function __destruct()
     {
-        // Close resource
-        if (is_resource($this->fp)) {
-            if (!fclose($this->fp)) {
-                throw new HttpClientException('Unable to close log file pointer');
-            }
-        }
+        $this->closeLogResource();
     }
 
     /**
@@ -277,6 +272,23 @@ class Client implements HttpClient, LoggerAwareInterface
                     throw new HttpClientException('Unable to write logs');
                 }
             }
+        }
+    }
+
+    /**
+     * Close log resource.
+     *
+     * @throws \Berlioz\Http\Client\Exception\HttpClientException
+     */
+    public function closeLogResource()
+    {
+        // Close resource
+        if (is_resource($this->fp)) {
+            if (!fclose($this->fp)) {
+                throw new HttpClientException('Unable to close log file pointer');
+            }
+
+            $this->fp = null;
         }
     }
 
