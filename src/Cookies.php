@@ -134,7 +134,6 @@ class Cookies
             function (&$value) {
                 $value = explode('=', $value, 2);
                 $value = array_map('trim', $value);
-                $value[0] = $value[0];
                 $value[1] = $value[1] ?? null;
             }
         );
@@ -148,7 +147,7 @@ class Cookies
         $cookie['name'] = $cookieTmp['name'];
         $cookie['value'] = isset($cookieTmp['value']) ? str_replace(' ', '+', $cookieTmp['value']) : null;
         $cookie['expires'] = isset($cookieTmp['max-age']) ? time() + $cookieTmp['max-age'] : (isset($cookieTmp['expires']) ? strtotime($cookieTmp['expires']) : null);
-        $cookie['path'] = $cookieTmp['path'] ?? ($uri ? $uri->getPath() : null);
+        $cookie['path'] = $cookieTmp['path'] ?? null;
         $cookie['domain'] = $cookieTmp['domain'] ?? ($uri ? $uri->getHost() : null);
         $cookie['domain'] = substr($cookie['domain'], 0, 1) == '.' ? $cookie['domain'] : '.' . $cookie['domain'];
         $cookie['version'] = $cookieTmp['version'] ?? null;
