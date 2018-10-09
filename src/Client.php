@@ -508,10 +508,21 @@ class Client implements HttpClient, LoggerAwareInterface
                             $redirectUrl = $newLocation[0];
                         }
 
+                        $redirectUri = Uri::createFromString($redirectUrl);
+
+                        if (empty($redirectUri->getHost())) {
+                            $url = parse_url((string) $request->getUri());
+                            $redirectUri = $redirectUri->withHost($url['host']);
+
+                            if (!empty($url['scheme'])) {
+                                $redirectUri = $redirectUri->withScheme($url['scheme']);
+                            }
+                        }
+
                         // Reset request for redirection, but keeps headers
                         $request = $request->withMethod(Request::HTTP_METHOD_GET)
                                            ->withHeader('Referer', (string) $request->getUri())
-                                           ->withUri(Uri::createFromString($redirectUrl))
+                                           ->withUri($redirectUri)
                                            ->withBody(new Stream);
 
                         // Add cookies to the new request
