@@ -10,12 +10,19 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Client;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 
+/**
+ * Class Cookies.
+ *
+ * @package Berlioz\Http\Client
+ */
 class Cookies
 {
     /** @var array Cookies */
@@ -42,30 +49,35 @@ class Cookies
 
         foreach ($this->cookies as $domain => $cookies) {
             foreach ($cookies as $cookie) {
-                // Good domain ?
-                if (empty($cookie['domain']) || empty($uri->getHost()) || $cookie['domain'] == $uri->getHost()) {
-                    $domainValid = true;
-                } else {
-                    if (substr($uri->getHost(), 0 - mb_strlen($cookie['domain'])) == $cookie['domain']) {
+                // Good domain?
+                {
+                    $domainValid = false;
+
+                    if (empty($cookie['domain']) || empty($uri->getHost()) || $cookie['domain'] == $uri->getHost()) {
                         $domainValid = true;
                     } else {
-                        if (substr($cookie['domain'], 1) == $uri->getHost()) {
+                        if (substr($uri->getHost(), 0 - mb_strlen($cookie['domain'])) == $cookie['domain']) {
                             $domainValid = true;
                         } else {
-                            $domainValid = false;
+                            if (substr($cookie['domain'], 1) == $uri->getHost()) {
+                                $domainValid = true;
+                            }
                         }
                     }
                 }
 
-                // Domain valid ?
-                if ($domainValid) {
-                    // Valid expiration ?
-                    if ($cookie['expires'] == 0 || $cookie['expires'] >= time()) {
-                        // Valid path ?
-                        if (empty($cookie['path']) || substr($uri->getPath(), 0, mb_strlen($cookie['path'])) == $cookie['path']) {
-                            $rawCookies[] = $cookie['name'] . "=" . str_replace("\0", "%00", $cookie['value']);
-                        }
-                    }
+                // Expired?
+                $expirationValid = ($cookie['expires'] == 0 || $cookie['expires'] >= time());
+
+                // Valid path?
+                $pathValid = (empty($cookie['path']) || substr($uri->getPath(), 0, mb_strlen($cookie['path'])) == $cookie['path']);
+
+                // Secured?
+                $securityValid = $cookie['secure'] == false || $uri->getScheme() === 'https';
+
+                // All is right?
+                if ($domainValid && $pathValid && $expirationValid && $securityValid) {
+                    $rawCookies[] = $cookie['name'] . "=" . str_replace("\0", "%00", $cookie['value']);
                 }
             }
         }
@@ -151,8 +163,8 @@ class Cookies
         $cookie['domain'] = $cookieTmp['domain'] ?? ($uri ? $uri->getHost() : null);
         $cookie['domain'] = substr($cookie['domain'], 0, 1) == '.' ? $cookie['domain'] : '.' . $cookie['domain'];
         $cookie['version'] = $cookieTmp['version'] ?? null;
-        $cookie['httponly'] = isset($cookieTmp['httponly']);
-        $cookie['secure'] = isset($cookieTmp['secure']);
+        $cookie['httponly'] = array_key_exists('httponly', $cookieTmp);
+        $cookie['secure'] = array_key_exists('secure', $cookieTmp);
 
         // Add cookie
         $this->cookies[$cookie['domain']][$cookie['name']] = $cookie;

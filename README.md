@@ -1,6 +1,7 @@
 # Berlioz HTTP Client
 
 **Berlioz HTTP Client** is a PHP library to request HTTP server with continuous navigation, including cookies, sessions...
+Implements PSR-18 (HTTP Client), PSR-7 (HTTP message interfaces) and PSR-17 (HTTP Factories) standards.
 
 ## Installation
 
@@ -16,8 +17,10 @@ $ composer require berlioz/http-client
 
 - **PHP** >= 7.1
 - PHP libraries:
-  - **CURL**
+  - **curl**
+  - **mbstring**
+  - **zlib**
 - Packages:
-  - **berlioz/core**
-  - **psr/http-message**
-  - **php-http/httplug**
+  - **berlioz/http-message**
+  - **psr/http-client**
+  - **psr/log**

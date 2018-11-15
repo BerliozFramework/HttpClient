@@ -10,17 +10,8 @@
  * file that was distributed with this source code, to the root.
  */
 
-declare(strict_types=1);
-
-namespace Berlioz\Http\Client\Exception;
-
-use Psr\Http\Client\ClientExceptionInterface;
-
-/**
- * Class HttpClientException.
- *
- * @package Berlioz\Http\Client\Exception
- */
-class HttpClientException extends \Exception implements ClientExceptionInterface
-{
+$file = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($file)) {
+    throw new RuntimeException('Install dependencies using composer to run the test suite.');
 }
+$autoload = require_once $file;

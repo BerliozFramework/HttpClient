@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="./tests/bootstrap.php" colors="true">
+  <testsuites>
+    <testsuite name="Berlioz HTTP Client test suite">
+      <directory suffix="Test.php">./tests</directory>
+    </testsuite>
+  </testsuites>
+  <php>
+    <const name="WEB_SERVER_HOST" value="localhost"/>
+    <const name="WEB_SERVER_PORT" value="8080"/>
+    <const name="WEB_SERVER_DOCROOT" value="./server/"/>
+  </php>
+</phpunit>

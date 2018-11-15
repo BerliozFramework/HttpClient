@@ -10,16 +10,19 @@
  * file that was distributed with this source code, to the root.
  */
 
+declare(strict_types=1);
+
 namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Exception\HttpClientException;
+use Berlioz\Http\Client\Exception\HttpException;
+use Berlioz\Http\Client\Exception\NetworkException;
+use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream;
 use Berlioz\Http\Message\Uri;
-use Http\Client\Exception\HttpException;
-use Http\Client\Exception\RequestException;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
@@ -30,7 +33,7 @@ use Psr\Log\LoggerAwareTrait;
 // Constants
 defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
 
-class Client implements HttpClient, LoggerAwareInterface
+class Client implements ClientInterface, LoggerAwareInterface
 {
     use LoggerAwareTrait;
     /** @var array Options */
@@ -438,7 +441,7 @@ class Client implements HttpClient, LoggerAwareInterface
     /**
      * @inheritdoc
      */
-    public function sendRequest(RequestInterface $request)
+    public function sendRequest(RequestInterface $request): ResponseInterface
     {
         if (function_exists('curl_version')) {
             $followLocationCounter = 0;
@@ -460,11 +463,19 @@ class Client implements HttpClient, LoggerAwareInterface
                 $content = curl_exec($ch);
 
                 // CURL errors ?
-                if (curl_errno($ch)) {
+                if ($errno = curl_errno($ch)) {
                     // Log request
                     $this->log($request);
 
-                    throw new HttpClientException(sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), curl_errno($ch));
+                    switch ($errno) {
+                        case CURLE_URL_MALFORMAT:
+                        case CURLE_URL_MALFORMAT_USER:
+                        case CURLE_MALFORMAT_USER:
+                        case CURLE_BAD_PASSWORD_ENTERED:
+                            throw new RequestException(sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request);
+                        default:
+                            throw new NetworkException(sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request);
+                    }
                 }
 
                 // Response
@@ -560,7 +571,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @option array "headers" Headers of request
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
     {
@@ -610,7 +621,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function get($uri, array $parameters = null, array $options = [])
     {
@@ -625,7 +636,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function post($uri, $body = null, array $options = [])
     {
@@ -640,7 +651,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function patch($uri, $body = null, array $options = [])
     {
@@ -655,7 +666,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function put($uri, $body = null, array $options = [])
     {
@@ -670,7 +681,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function delete($uri, array $parameters = [], array $options = [])
     {
@@ -685,7 +696,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function options($uri, array $parameters = [], array $options = [])
     {
@@ -700,7 +711,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function head($uri, array $parameters = [], array $options = [])
     {
@@ -715,7 +726,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function connect($uri, $body, array $options = [])
     {
@@ -730,7 +741,7 @@ class Client implements HttpClient, LoggerAwareInterface
      * @param array                                 $options    Options
      *
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Http\Client\Exception If an error happens during processing the request.
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
     public function trace($uri, array $parameters = [], array $options = [])
     {

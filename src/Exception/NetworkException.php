@@ -14,13 +14,13 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Exception;
 
-use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\NetworkExceptionInterface;
 
 /**
- * Class HttpClientException.
+ * Class NetworkException.
  *
  * @package Berlioz\Http\Client\Exception
  */
-class HttpClientException extends \Exception implements ClientExceptionInterface
+class NetworkException extends HttpException implements NetworkExceptionInterface
 {
 }
