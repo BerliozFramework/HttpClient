@@ -370,7 +370,7 @@ class Client implements ClientInterface, LoggerAwareInterface
 
         // Treat first header
         $matches = [];
-        if (preg_match("#^HTTP/([0-9\.]+) ([0-9]+) (.*)$#ie", $firstHeader, $matches) === 1) {
+        if (preg_match("#^HTTP/([0-9\.]+) ([0-9]+) (.*)$#i", $firstHeader, $matches) === 1) {
             $reasonPhrase = $matches[3];
         } else {
             $reasonPhrase = null;

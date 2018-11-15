@@ -5,9 +5,4 @@
       <directory suffix="Test.php">./tests</directory>
     </testsuite>
   </testsuites>
-  <php>
-    <const name="WEB_SERVER_HOST" value="localhost"/>
-    <const name="WEB_SERVER_PORT" value="8080"/>
-    <const name="WEB_SERVER_DOCROOT" value="./server/"/>
-  </php>
 </phpunit>
