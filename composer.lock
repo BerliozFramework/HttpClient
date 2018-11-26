@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/BerliozFramework/HttpMessage.git",
-                "reference": "799747ed7377fd4d92a09d0839937e185a214cd0"
+                "reference": "fb1c262bea6b88443d137c1372a18e9b4ac82405"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/BerliozFramework/HttpMessage/zipball/799747ed7377fd4d92a09d0839937e185a214cd0",
-                "reference": "799747ed7377fd4d92a09d0839937e185a214cd0",
+                "url": "https://api.github.com/repos/BerliozFramework/HttpMessage/zipball/fb1c262bea6b88443d137c1372a18e9b4ac82405",
+                "reference": "fb1c262bea6b88443d137c1372a18e9b4ac82405",
                 "shasum": ""
             },
             "require": {
@@ -25,11 +25,15 @@
                 "ext-json": "*",
                 "ext-mbstring": "*",
                 "php": "^7.1",
-                "psr/http-factory": "^1.0.0",
-                "psr/http-message": "^1.0.0"
+                "psr/http-factory": "^1.0",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-factory-implementation": "^1.0",
+                "psr/http-message-implementation": "^1.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "~7.3"
+                "phpunit/phpunit": "^7.4"
             },
             "type": "library",
             "autoload": {
@@ -49,7 +53,7 @@
             ],
             "description": "Berlioz HTTP Message",
             "homepage": "http://www.berlioz-framework.com",
-            "time": "2018-09-26T09:46:23+00:00"
+            "time": "2018-11-15T15:31:55+00:00"
         },
         {
             "name": "psr/http-client",
@@ -204,16 +208,16 @@
         },
         {
             "name": "psr/log",
-            "version": "1.0.2",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-fig/log.git",
-                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d"
+                "reference": "6c001f1daafa3a3ac1d8ff69ee4db8e799a654dd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/log/zipball/4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
-                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/6c001f1daafa3a3ac1d8ff69ee4db8e799a654dd",
+                "reference": "6c001f1daafa3a3ac1d8ff69ee4db8e799a654dd",
                 "shasum": ""
             },
             "require": {
@@ -247,7 +251,7 @@
                 "psr",
                 "psr-3"
             ],
-            "time": "2016-10-10T12:19:37+00:00"
+            "time": "2018-11-20T15:27:04+00:00"
         }
     ],
     "packages-dev": [
@@ -1173,28 +1177,28 @@
         },
         {
             "name": "sebastian/environment",
-            "version": "3.1.0",
+            "version": "4.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/environment.git",
-                "reference": "cd0871b3975fb7fc44d11314fd1ee20925fce4f5"
+                "reference": "febd209a219cea7b56ad799b30ebbea34b71eb8f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/environment/zipball/cd0871b3975fb7fc44d11314fd1ee20925fce4f5",
-                "reference": "cd0871b3975fb7fc44d11314fd1ee20925fce4f5",
+                "url": "https://api.github.com/repos/sebastianbergmann/environment/zipball/febd209a219cea7b56ad799b30ebbea34b71eb8f",
+                "reference": "febd209a219cea7b56ad799b30ebbea34b71eb8f",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.0"
+                "php": "^7.1"
             },
             "require-dev": {
-                "phpunit/phpunit": "^6.1"
+                "phpunit/phpunit": "^7.4"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "3.1.x-dev"
+                    "dev-master": "4.0-dev"
                 }
             },
             "autoload": {
@@ -1219,7 +1223,7 @@
                 "environment",
                 "hhvm"
             ],
-            "time": "2017-07-01T08:51:00+00:00"
+            "time": "2018-11-25T09:31:21+00:00"
         },
         {
             "name": "sebastian/exporter",

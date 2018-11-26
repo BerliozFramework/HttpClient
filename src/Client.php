@@ -18,6 +18,7 @@ use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Exception\RequestException;
+use Berlioz\Http\Message\Message;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream;
@@ -33,7 +34,7 @@ use Psr\Log\LoggerAwareTrait;
 // Constants
 defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
 
-class Client implements ClientInterface, LoggerAwareInterface
+class Client implements ClientInterface, LoggerAwareInterface, \Serializable
 {
     use LoggerAwareTrait;
     /** @var array Options */
@@ -42,7 +43,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     private $curlOptions;
     /** @var array Default headers */
     private $defaultHeaders;
-    /** @var array History */
+    /** @var \Psr\Http\Message\MessageInterface[][] History */
     private $history;
     /** @var \Berlioz\Http\Client\Cookies Cookies */
     private $cookies;
@@ -92,6 +93,53 @@ class Client implements ClientInterface, LoggerAwareInterface
     public function __destruct()
     {
         $this->closeLogResource();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function serialize(): string
+    {
+        // Make history
+        $bodies = [];
+        foreach ($this->history as $iEntry => $entry) {
+            foreach ($entry as $type => $message) {
+                if ($message instanceof Message) {
+                    $bodies[$iEntry][$type] = $message->getBody()->getContents();
+                }
+            }
+        }
+
+        return serialize(['options'        => $this->options,
+                          'curlOptions'    => $this->curlOptions,
+                          'defaultHeaders' => $this->defaultHeaders,
+                          'history'        => $this->history,
+                          'cookies'        => $this->cookies,
+                          'bodies'         => $bodies]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function unserialize($serialized)
+    {
+        $tmpUnserialized = unserialize($serialized);
+
+        $this->options = $tmpUnserialized['options'];
+        $this->curlOptions = $tmpUnserialized['curlOptions'];
+        $this->defaultHeaders = $tmpUnserialized['defaultHeaders'];
+        $this->history = $tmpUnserialized['history'];
+        $this->cookies = $tmpUnserialized['cookies'];
+
+        // Construct history
+        foreach ($tmpUnserialized['bodies'] as $iEntry => $entry) {
+            foreach ($entry as $type => $body) {
+                $stream = new Stream();
+                $stream->write($body);
+
+                $this->history[$iEntry][$type] = $this->history[$iEntry][$type]->withBody($stream);
+            }
+        }
     }
 
     /**
@@ -300,7 +348,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      *
      * @param int|null $index History index (null for all, -1 for last)
      *
-     * @return false|array
+     * @return false|\Psr\Http\Message\MessageInterface[]
      */
     public function getHistory(int $index = null)
     {

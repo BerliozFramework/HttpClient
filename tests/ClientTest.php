@@ -249,4 +249,20 @@ class ClientTest extends TestCase
 
         $this->assertEquals('test=value', $client->getCookies()->getCookiesForUri($uri));
     }
+
+    public function testSerialization()
+    {
+        $uri = new Uri('http', 'localhost', 8080, '/request.php');
+        $client = new Client;
+        $client->request('get', $uri);
+        $client->request('get', $uri);
+
+        $clientSerialized = serialize($client);
+        $clientUnserialized = unserialize($clientSerialized);
+
+        $this->assertEquals($client->getHistory(0)['response']->getBody()->getContents(),
+                            $clientUnserialized->getHistory(0)['response']->getBody()->getContents());
+        $this->assertEquals($client->getHistory(1)['response']->getBody()->getContents(),
+                            $clientUnserialized->getHistory(1)['response']->getBody()->getContents());
+    }
 }
