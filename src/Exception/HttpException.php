@@ -39,7 +39,12 @@ class HttpException extends HttpClientException
      */
     public function __construct(string $message, RequestInterface $request, ?ResponseInterface $response = null, ?\Throwable $previous = null)
     {
-        parent::__construct($message, 0, $previous);
+        $code = 0;
+        if ($response) {
+            $code = $response->getStatusCode();
+        }
+
+        parent::__construct($message, $code, $previous);
         $this->request = $request;
         $this->response = $response;
     }
