@@ -274,6 +274,13 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
                                     $request->getUri()->getPath() . (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
                                     $request->getProtocolVersion());
 
+                    // Host
+                    $str .= sprintf('Host: %s', $request->getUri()->getHost());
+                    if ($request->getUri()->getPort()) {
+                        $str .= sprintf(':%d', $request->getUri()->getPort());
+                    }
+                    $str .= PHP_EOL;
+
                     // Headers
                     foreach ($request->getHeaders() as $key => $values) {
                         foreach ($values as $value) {
