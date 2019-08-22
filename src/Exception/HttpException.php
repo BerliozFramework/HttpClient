@@ -32,10 +32,10 @@ class HttpException extends HttpClientException
     /**
      * HttpException constructor.
      *
-     * @param string                                   $message
-     * @param \Psr\Http\Message\RequestInterface       $request
+     * @param string $message
+     * @param \Psr\Http\Message\RequestInterface $request
      * @param null|\Psr\Http\Message\ResponseInterface $response
-     * @param null|\Throwable                          $previous
+     * @param null|\Throwable $previous
      */
     public function __construct(string $message, RequestInterface $request, ?ResponseInterface $response = null, ?\Throwable $previous = null)
     {
@@ -62,9 +62,9 @@ class HttpException extends HttpClientException
     /**
      * Get response.
      *
-     * @return \Psr\Http\Message\ResponseInterface
+     * @return \Psr\Http\Message\ResponseInterface|null
      */
-    public function getResponse(): ResponseInterface
+    public function getResponse(): ?ResponseInterface
     {
         return $this->response;
     }
