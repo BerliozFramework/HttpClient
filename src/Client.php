@@ -371,6 +371,18 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     }
 
     /**
+     * Clear history.
+     *
+     * @return \Berlioz\Http\Client\Client
+     */
+    public function clearHistory(): Client
+    {
+        $this->history = [];
+
+        return $this;
+    }
+
+    /**
      * Get cookies manager.
      *
      * @return \Berlioz\Http\Client\Cookies

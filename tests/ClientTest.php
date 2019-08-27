@@ -149,7 +149,7 @@ class ClientTest extends TestCase
         $response = $client->sendRequest($request);
     }
 
-    public function testGetHistory()
+    public function testHistory()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');
         $client = new Client();
@@ -164,6 +164,9 @@ class ClientTest extends TestCase
         $this->assertInstanceOf(ResponseInterface::class, $history1['response']);
         $this->assertEquals('GET', $history1['request']->getMethod());
         $this->assertEquals('POST', $history2['request']->getMethod());
+
+        $client->clearHistory();
+        $this->assertCount(0, $client->getHistory());
     }
 
     public function testSetDefaultHeaders()
