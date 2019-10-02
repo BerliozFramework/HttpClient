@@ -61,9 +61,11 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     public function __construct($options = [])
     {
         // Default options
-        $this->options = ['followLocationLimit' => 5,
-                          'logFile'             => null,
-                          'exceptions'          => true];
+        $this->options = [
+            'followLocationLimit' => 5,
+            'logFile' => null,
+            'exceptions' => true,
+        ];
         $this->options = array_merge($this->options, $options);
 
         // Init CURL options
@@ -71,12 +73,14 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
 
         // Default headers
         $this->defaultHeaders =
-            ['Accept'          => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
-             'User-Agent'      => ['BerliozBot/1.0'],
-             'Accept-Language' => ['fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'],
-             'Accept-Encoding' => ['gzip, deflate'],
-             'Accept-Charset'  => ['ISO-8859-1,utf-8;q=0.7,*;q=0.7'],
-             'Connection'      => ['close']];
+            [
+                'Accept' => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
+                'User-Agent' => ['BerliozBot/1.0'],
+                'Accept-Language' => ['fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'],
+                'Accept-Encoding' => ['gzip, deflate'],
+                'Accept-Charset' => ['ISO-8859-1,utf-8;q=0.7,*;q=0.7'],
+                'Connection' => ['close'],
+            ];
 
         // Init history
         $this->history = [];
@@ -110,12 +114,16 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
             }
         }
 
-        return serialize(['options'        => $this->options,
-                          'curlOptions'    => $this->curlOptions,
-                          'defaultHeaders' => $this->defaultHeaders,
-                          'history'        => $this->history,
-                          'cookies'        => $this->cookies,
-                          'bodies'         => $bodies]);
+        return serialize(
+            [
+                'options' => $this->options,
+                'curlOptions' => $this->curlOptions,
+                'defaultHeaders' => $this->defaultHeaders,
+                'history' => $this->history,
+                'cookies' => $this->cookies,
+                'bodies' => $bodies,
+            ]
+        );
     }
 
     /**
@@ -169,7 +177,7 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
      * They are reserved for good work of service.
      *
      * @param array $curlOptions
-     * @param bool  $erase Erase all existent options (default: false)
+     * @param bool $erase Erase all existent options (default: false)
      */
     public function setCurlOptions(array $curlOptions, bool $erase = false)
     {
@@ -178,15 +186,17 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
         }
 
         // Remove reserved CURL options
-        $reservedOptions = [CURLOPT_HTTP_VERSION,
-                            CURLOPT_CUSTOMREQUEST,
-                            CURLOPT_URL,
-                            CURLOPT_HEADER,
-                            CURLINFO_HEADER_OUT,
-                            CURLOPT_HTTPHEADER,
-                            CURLOPT_RETURNTRANSFER,
-                            CURLOPT_POST,
-                            CURLOPT_POSTFIELDS];
+        $reservedOptions = [
+            CURLOPT_HTTP_VERSION,
+            CURLOPT_CUSTOMREQUEST,
+            CURLOPT_URL,
+            CURLOPT_HEADER,
+            CURLINFO_HEADER_OUT,
+            CURLOPT_HTTPHEADER,
+            CURLOPT_RETURNTRANSFER,
+            CURLOPT_POST,
+            CURLOPT_POSTFIELDS,
+        ];
         if (defined('CURLOPT_FOLLOWLOCATION')) {
             $reservedOptions[] = CURLOPT_FOLLOWLOCATION;
         }
@@ -202,7 +212,7 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
      * Set default headers.
      *
      * @param array $headers
-     * @param bool  $erase Erase if exists (default: true)
+     * @param bool $erase Erase if exists (default: true)
      */
     public function setDefaultHeaders(array $headers, bool $erase = true)
     {
@@ -216,63 +226,73 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Set default header.
      *
-     * @param string $name  Name
+     * @param string $name Name
      * @param string $value Value
-     * @param bool   $erase Erase if exists (default: true)
+     * @param bool $erase Erase if exists (default: true)
      */
     public function setDefaultHeader(string $name, string $value, bool $erase = true)
     {
         if ($erase || !isset($this->defaultHeaders[$name])) {
-            $this->defaultHeaders[$name] = (array) $value;
+            $this->defaultHeaders[$name] = (array)$value;
         } else {
-            $this->defaultHeaders[$name] = array_merge($this->defaultHeaders[$name] ?? [], (array) $value);
+            $this->defaultHeaders[$name] = array_merge($this->defaultHeaders[$name] ?? [], (array)$value);
         }
     }
 
     /**
      * Log request and response.
      *
-     * @param \Psr\Http\Message\RequestInterface  $request
+     * @param \Psr\Http\Message\RequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface $response
      *
      * @throws \Berlioz\Http\Client\Exception\HttpClientException if unable to write logs
      */
     protected function log(RequestInterface $request, ResponseInterface $response = null)
     {
-        $this->history[] = ['request'  => $request,
-                            'response' => $response];
+        $this->history[] = [
+            'request' => $request,
+            'response' => $response,
+        ];
 
         // Logger
         if (!empty($this->logger)) {
             $logLevel = 'info';
-            if (!$response || intval(substr((string) $response->getStatusCode(), 0, 1)) != 2) {
+            if (!$response || intval(substr((string)$response->getStatusCode(), 0, 1)) != 2) {
                 $logLevel = 'warning';
             }
 
-            $this->logger->log($logLevel,
-                               sprintf('%s / Request %s to %s, response %s', __METHOD__,
-                                       $request->getMethod(),
-                                       $request->getUri(),
-                                       $response ?
-                                           sprintf('%d (%s)',
-                                                   $response->getStatusCode(),
-                                                   $response->getReasonPhrase()) :
-                                           'NONE'));
+            $this->logger->log(
+                $logLevel,
+                sprintf(
+                    '%s / Request %s to %s, response %s', __METHOD__,
+                    $request->getMethod(),
+                    $request->getUri(),
+                    $response ?
+                        sprintf(
+                            '%d (%s)',
+                            $response->getStatusCode(),
+                            $response->getReasonPhrase()
+                        ) :
+                        'NONE'
+                )
+            );
         }
 
         // Log all detail to file ?
         if (!empty($this->options['logFile'])) {
             if (is_resource($this->fp) || is_resource($this->fp = @fopen($this->options['logFile'], 'a'))) {
                 $str = '###### ' . date('c') . ' ######' . PHP_EOL . PHP_EOL .
-                       '>>>>>> Request' . PHP_EOL . PHP_EOL;
+                    '>>>>>> Request' . PHP_EOL . PHP_EOL;
 
                 // Request
                 {
                     // Main header
-                    $str .= sprintf('%s %s HTTP/%s' . PHP_EOL,
-                                    $request->getMethod(),
-                                    $request->getUri()->getPath() . (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
-                                    $request->getProtocolVersion());
+                    $str .= sprintf(
+                        '%s %s HTTP/%s' . PHP_EOL,
+                        $request->getMethod(),
+                        $request->getUri()->getPath() . (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
+                        $request->getProtocolVersion()
+                    );
 
                     // Host
                     $str .= sprintf('Host: %s', $request->getUri()->getHost());
@@ -290,9 +310,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
 
                     // Body
                     $str .= PHP_EOL .
-                            ($request->getBody()->getSize() > 0 ? $request->getBody() : 'Empty body') .
-                            PHP_EOL .
-                            PHP_EOL;
+                        ($request->getBody()->getSize() > 0 ? $request->getBody() : 'Empty body') .
+                        PHP_EOL .
+                        PHP_EOL;
                 }
 
                 $str .= '<<<<<< Response' . PHP_EOL . PHP_EOL;
@@ -300,10 +320,12 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
                 // Response
                 if (!is_null($response)) {
                     // Main header
-                    $str .= sprintf('HTTP/%s %s %s' . PHP_EOL,
-                                    $response->getProtocolVersion(),
-                                    $response->getStatusCode(),
-                                    $response->getReasonPhrase());
+                    $str .= sprintf(
+                        'HTTP/%s %s %s' . PHP_EOL,
+                        $response->getProtocolVersion(),
+                        $response->getStatusCode(),
+                        $response->getReasonPhrase()
+                    );
 
                     // Headers
                     foreach ($response->getHeaders() as $key => $values) {
@@ -314,13 +336,13 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
 
                     // Body
                     $str .= PHP_EOL .
-                            ($response->getBody()->getSize() > 0 ? $response->getBody() : 'Empty body') .
-                            PHP_EOL .
-                            PHP_EOL;
+                        ($response->getBody()->getSize() > 0 ? $response->getBody() : 'Empty body') .
+                        PHP_EOL .
+                        PHP_EOL;
                 } else {
                     $str .= 'No response' .
-                            PHP_EOL .
-                            PHP_EOL;
+                        PHP_EOL .
+                        PHP_EOL;
                 }
 
                 $str .= PHP_EOL . PHP_EOL;
@@ -395,8 +417,8 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Parse headers.
      *
-     * @param string $headers      Raw headers
-     * @param mixed  $reasonPhrase Reason phrase returned by reference
+     * @param string $headers Raw headers
+     * @param mixed $reasonPhrase Reason phrase returned by reference
      *
      * @return array
      */
@@ -416,12 +438,14 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
                     function ($value) {
                         return trim($value);
                     },
-                    $value);
+                    $value
+                );
                 $value = array_filter($value);
 
                 return $value;
             },
-            $headers);
+            $headers
+        );
         $headers = array_filter($headers);
 
         foreach ($headers as $header) {
@@ -496,7 +520,7 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
 
         if ($request->getBody()->getSize() > 0) {
             curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, (string) $request->getBody());
+            curl_setopt($ch, CURLOPT_POSTFIELDS, (string)$request->getBody());
         }
 
         // Set user options
@@ -549,7 +573,7 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
                 {
                     // Headers
                     $reasonPhrase = null;
-                    $headers = $this->parseHeaders((string) substr($content, 0, curl_getinfo($ch, CURLINFO_HEADER_SIZE)), $reasonPhrase);
+                    $headers = $this->parseHeaders((string)substr($content, 0, curl_getinfo($ch, CURLINFO_HEADER_SIZE)), $reasonPhrase);
 
                     // Body
                     $stream = new Stream();
@@ -561,13 +585,15 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
                             $streamData = gzinflate(trim($streamData));
                         }
                     }
-                    $stream->write((string) $streamData);
+                    $stream->write((string)$streamData);
 
                     // Construct object
-                    $response = new Response($stream,
-                                             curl_getinfo($ch, CURLINFO_HTTP_CODE),
-                                             $headers,
-                                             $reasonPhrase ?? '');
+                    $response = new Response(
+                        $stream,
+                        curl_getinfo($ch, CURLINFO_HTTP_CODE),
+                        $headers,
+                        $reasonPhrase ?? ''
+                    );
 
                     // Parse response cookies
                     $this->getCookies()->addCookiesFromResponse($request->getUri(), $response);
@@ -589,7 +615,7 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
                         $redirectUri = Uri::createFromString($redirectUrl);
 
                         if (empty($redirectUri->getHost())) {
-                            $url = parse_url((string) $request->getUri());
+                            $url = parse_url((string)$request->getUri());
                             $redirectUri = $redirectUri->withHost($url['host']);
 
                             if (!empty($url['scheme'])) {
@@ -599,9 +625,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
 
                         // Reset request for redirection, but keeps headers
                         $request = $request->withMethod(Request::HTTP_METHOD_GET)
-                                           ->withHeader('Referer', (string) $request->getUri())
-                                           ->withUri($redirectUri)
-                                           ->withBody(new Stream);
+                            ->withHeader('Referer', (string)$request->getUri())
+                            ->withUri($redirectUri)
+                            ->withBody(new Stream);
 
                         // Add cookies to the new request
                         $request = $this->getCookies()->addCookiesToRequest($request);
@@ -613,10 +639,12 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
 
             // Exceptions if error?
             if ($this->options['exceptions']) {
-                if (!$response || intval(substr((string) $response->getStatusCode(), 0, 1)) != 2) {
-                    throw new HttpException(sprintf('%d - %s', $response->getStatusCode(), $response->getReasonPhrase()),
-                                            $originalRequest,
-                                            $response);
+                if (!$response || intval(substr((string)$response->getStatusCode(), 0, 1)) != 2) {
+                    throw new HttpException(
+                        sprintf('%d - %s', $response->getStatusCode(), $response->getReasonPhrase()),
+                        $originalRequest,
+                        $response
+                    );
                 }
             }
 
@@ -627,20 +655,19 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     }
 
     /**
-     * Request.
+     * Construct request.
      *
-     * @param string                                   $method     Http method
-     * @param string|\Psr\Http\Message\UriInterface    $uri        Uri
-     * @param array                                    $parameters Get parameters
-     * @param string|\Psr\Http\Message\StreamInterface $body       Body
-     * @param array                                    $options    Options
+     * @param string $method Http method
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri
+     * @param array $parameters Get parameters
+     * @param string|\Psr\Http\Message\StreamInterface $body Body
+     * @param array $options Options
      *
      * @option array "headers" Headers of request
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return \Psr\Http\Message\RequestInterface
      */
-    public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
+    public function constructRequest(string $method, $uri, array $parameters = null, $body = null, array $options = []): RequestInterface
     {
         // URI
         if (!$uri instanceof UriInterface) {
@@ -677,15 +704,36 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
             }
         }
 
+        return $request;
+    }
+
+    /**
+     * Request.
+     *
+     * @param string $method Http method
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri
+     * @param array $parameters Get parameters
+     * @param string|\Psr\Http\Message\StreamInterface $body Body
+     * @param array $options Options
+     *
+     * @option array "headers" Headers of request
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     */
+    public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
+    {
+        $request = $this->constructRequest($method, $uri, $parameters, $body, $options);
+
         return $this->sendRequest($request);
     }
 
     /**
      * Get request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
-     * @param array                                 $parameters Get parameters
-     * @param array                                 $options    Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param array $parameters Get parameters
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -698,9 +746,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Post request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
-     * @param string|StreamInterface                $body    Body of request
-     * @param array                                 $options Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|StreamInterface $body Body of request
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -713,9 +761,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Patch request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
-     * @param string|StreamInterface                $body    Body of request
-     * @param array                                 $options Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|StreamInterface $body Body of request
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -728,9 +776,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Put request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
-     * @param string|StreamInterface                $body    Body of request
-     * @param array                                 $options Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|StreamInterface $body Body of request
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -743,9 +791,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Delete request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
-     * @param array                                 $parameters Get parameters
-     * @param array                                 $options    Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param array $parameters Get parameters
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -758,9 +806,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Options request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
-     * @param array                                 $parameters Get parameters
-     * @param array                                 $options    Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param array $parameters Get parameters
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -773,9 +821,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Head request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
-     * @param array                                 $parameters Get parameters
-     * @param array                                 $options    Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param array $parameters Get parameters
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -788,9 +836,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Connect request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri     Uri of request
-     * @param string|StreamInterface                $body    Body of request
-     * @param array                                 $options Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|StreamInterface $body Body of request
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
@@ -803,9 +851,9 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     /**
      * Trace request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri        Uri of request
-     * @param array                                 $parameters Get parameters
-     * @param array                                 $options    Options
+     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param array $parameters Get parameters
+     * @param array $options Options
      *
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.

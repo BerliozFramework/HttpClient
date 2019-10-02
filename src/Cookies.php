@@ -89,7 +89,7 @@ class Cookies
      * Add header line for cookies
      *
      * @param \Psr\Http\Message\RequestInterface $request
-     * @param bool                               $erase Erase Cookie line ? (default: true)
+     * @param bool $erase Erase Cookie line ? (default: true)
      *
      * @return \Psr\Http\Message\RequestInterface
      */
@@ -109,7 +109,7 @@ class Cookies
     /**
      * Add cookies from response
      *
-     * @param \Psr\Http\Message\UriInterface      $uri
+     * @param \Psr\Http\Message\UriInterface $uri
      * @param \Psr\Http\Message\ResponseInterface $response
      */
     public function addCookiesFromResponse(UriInterface $uri, ResponseInterface $response)
@@ -124,20 +124,22 @@ class Cookies
     /**
      * Add raw cookie line
      *
-     * @param string                              $raw
+     * @param string $raw
      * @param \Psr\Http\Message\UriInterface|null $uri
      */
     public function addCookieRaw(string $raw, UriInterface $uri = null)
     {
         // Cookie
-        $cookie = ['name'     => null,
-                   'value'    => null,
-                   'expires'  => null,
-                   'path'     => null,
-                   'domain'   => null,
-                   'version'  => null,
-                   'httponly' => false,
-                   'secure'   => false];
+        $cookie = [
+            'name' => null,
+            'value' => null,
+            'expires' => null,
+            'path' => null,
+            'domain' => null,
+            'version' => null,
+            'httponly' => false,
+            'secure' => false,
+        ];
 
         // Parse
         $cookieTmp = explode(";", $raw);
