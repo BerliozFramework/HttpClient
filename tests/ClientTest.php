@@ -46,7 +46,7 @@ class ClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
 
-        $bodyExploded = preg_split('/\r?\n/', (string) $response->getBody());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('GET', $bodyExploded[0]);
     }
 
@@ -58,7 +58,7 @@ class ClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
 
-        $bodyExploded = preg_split('/\r?\n/', (string) $response->getBody());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('POST', $bodyExploded[0]);
     }
 
@@ -70,7 +70,7 @@ class ClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
 
-        $bodyExploded = preg_split('/\r?\n/', (string) $response->getBody());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('PUT', $bodyExploded[0]);
     }
 
@@ -82,7 +82,7 @@ class ClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
 
-        $bodyExploded = preg_split('/\r?\n/', (string) $response->getBody());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('PATCH', $bodyExploded[0]);
     }
 
@@ -94,7 +94,7 @@ class ClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
 
-        $bodyExploded = preg_split('/\r?\n/', (string) $response->getBody());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('TRACE', $bodyExploded[0]);
     }
 
@@ -106,7 +106,7 @@ class ClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
 
-        $bodyExploded = preg_split('/\r?\n/', (string) $response->getBody());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('OPTIONS', $bodyExploded[0]);
     }
 
@@ -177,17 +177,14 @@ class ClientTest extends TestCase
         $client = new Client();
         $client->setDefaultHeaders(['Header1' => ['Value']]);
 
-        $class = new \ReflectionObject($client);
-        $property = $class->getProperty('defaultHeaders');
-        $property->setAccessible(true);
-
-        $this->assertEquals($headers, $property->getValue($client));
+        $this->assertEquals($headers, $client->getDefaultHeaders());
+        $this->assertEquals($headers['Header1'], $client->getDefaultHeader('Header1'));
 
         $client->setDefaultHeaders($headers2);
-        $this->assertEquals($headers2, $property->getValue($client));
+        $this->assertEquals($headers2, $client->getDefaultHeaders());
 
         $client->setDefaultHeaders($headers, false);
-        $this->assertEquals(array_merge($headers, $headers2), $property->getValue($client));
+        $this->assertEquals(array_merge($headers, $headers2), $client->getDefaultHeaders());
     }
 
     public function testSetDefaultHeader()
@@ -205,7 +202,16 @@ class ClientTest extends TestCase
         $client->setDefaultHeader('Header1', 'Value2');
         $this->assertEquals(array_merge($defaultHeaders, ['Header1' => ['Value2']]), $property->getValue($client));
         $client->setDefaultHeader('Header1', 'Value1', false);
-        $this->assertEquals(array_merge($defaultHeaders, ['Header1' => ['Value2', 'Value1']]), $property->getValue($client));
+        $this->assertEquals(
+            array_merge(
+                $defaultHeaders, [
+                'Header1' => [
+                    'Value2',
+                    'Value1',
+                ],
+            ]
+            ), $property->getValue($client)
+        );
 
         // Test request headers
         $uri = new Uri('http', 'localhost', 8080, '/request.php');
@@ -225,7 +231,7 @@ class ClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
 
-        $bodyExploded = preg_split('/\r?\n/', (string) $response->getBody());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('GET', $bodyExploded[0]);
     }
 
@@ -263,9 +269,13 @@ class ClientTest extends TestCase
         $clientSerialized = serialize($client);
         $clientUnserialized = unserialize($clientSerialized);
 
-        $this->assertEquals($client->getHistory(0)['response']->getBody()->getContents(),
-                            $clientUnserialized->getHistory(0)['response']->getBody()->getContents());
-        $this->assertEquals($client->getHistory(1)['response']->getBody()->getContents(),
-                            $clientUnserialized->getHistory(1)['response']->getBody()->getContents());
+        $this->assertEquals(
+            $client->getHistory(0)['response']->getBody()->getContents(),
+            $clientUnserialized->getHistory(0)['response']->getBody()->getContents()
+        );
+        $this->assertEquals(
+            $client->getHistory(1)['response']->getBody()->getContents(),
+            $clientUnserialized->getHistory(1)['response']->getBody()->getContents()
+        );
     }
 }

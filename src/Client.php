@@ -30,11 +30,13 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Serializable;
+use function mb_convert_case;
 
 // Constants
 defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
 
-class Client implements ClientInterface, LoggerAwareInterface, \Serializable
+class Client implements ClientInterface, LoggerAwareInterface, Serializable
 {
     use LoggerAwareTrait;
     /** @var array Options */
@@ -209,6 +211,16 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
     }
 
     /**
+     * Get default headers.
+     *
+     * @return array
+     */
+    public function getDefaultHeaders(): array
+    {
+        return $this->defaultHeaders;
+    }
+
+    /**
      * Set default headers.
      *
      * @param array $headers
@@ -221,6 +233,18 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
         } else {
             $this->defaultHeaders = array_merge($this->defaultHeaders, $headers);
         }
+    }
+
+    /**
+     * Get default header.
+     *
+     * @param string $name
+     *
+     * @return array
+     */
+    public function getDefaultHeader(string $name): array
+    {
+        return $this->defaultHeaders[$name] ?? [];
     }
 
     /**
@@ -449,7 +473,7 @@ class Client implements ClientInterface, LoggerAwareInterface, \Serializable
         $headers = array_filter($headers);
 
         foreach ($headers as $header) {
-            $header[0] = \mb_convert_case($header[0], MB_CASE_TITLE);
+            $header[0] = mb_convert_case($header[0], MB_CASE_TITLE);
             $header[1] = $header[1] ?? null;
 
             if (!isset($finalHeaders[$header[0]])) {
