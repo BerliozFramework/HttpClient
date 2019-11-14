@@ -26,14 +26,14 @@ class ClientTest extends TestCase
     /** @var \Symfony\Component\Process\Process */
     private static $process;
 
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass(): void
     {
         self::$process = new Process("php -S localhost:8080 -t " . realpath(__DIR__ . '/server'));
         self::$process->start();
         usleep(100000);
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClass(): void
     {
         self::$process->stop();
     }
