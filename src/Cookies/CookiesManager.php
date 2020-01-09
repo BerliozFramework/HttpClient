@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Cookies;
 
+use Countable;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
@@ -23,10 +24,10 @@ use Psr\Http\Message\UriInterface;
  *
  * @package Berlioz\Http\Client\Cookies
  */
-class CookiesManager
+class CookiesManager implements Countable
 {
     /** @var array CookiesManager */
-    protected $cookies;
+    protected $cookies = [];
 
     /**
      * CookiesManager constructor.
@@ -34,6 +35,14 @@ class CookiesManager
     public function __construct()
     {
         $this->cookies = [];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function count(): int
+    {
+        return count($this->cookies);
     }
 
     /**
