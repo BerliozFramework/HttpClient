@@ -356,7 +356,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
                 $str .= '<<<<<< Response' . PHP_EOL . PHP_EOL;
 
                 // Response
-                if (!is_null($response)) {
+                if (null !== $response) {
                     // Main header
                     $str .= sprintf(
                         'HTTP/%s %s %s' . PHP_EOL,
@@ -735,7 +735,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         }
 
         // Parameters
-        if (!is_null($parameters)) {
+        if (null !== $parameters) {
             $uri = $uri->withQuery(http_build_query($parameters));
         }
 
