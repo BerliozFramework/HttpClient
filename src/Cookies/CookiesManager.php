@@ -79,6 +79,30 @@ class CookiesManager
     }
 
     /**
+     * Add raw cookie.
+     *
+     * @param string $raw
+     * @param \Psr\Http\Message\UriInterface|null $uri
+     *
+     * @return static
+     * @throws \Berlioz\Http\Client\Exception\HttpClientException
+     */
+    public function addRawCookie(string $raw, ?UriInterface $uri = null): CookiesManager
+    {
+        $cookie = Cookie::parse($raw, $uri);
+
+        if (null !== ($existentCookie = $this->getCookie($cookie->getName(), $uri))) {
+            $existentCookie->update($cookie);
+
+            return $this;
+        }
+
+        $this->cookies[] = $cookie;
+
+        return $this;
+    }
+
+    /**
      * Add cookies from response
      *
      * @param \Psr\Http\Message\UriInterface $uri
@@ -92,14 +116,7 @@ class CookiesManager
         $cookies = $response->getHeader('Set-Cookie');
 
         foreach ($cookies as $raw) {
-            $cookie = Cookie::parse($raw, $uri);
-
-            if (null !== ($existentCookie = $this->getCookie($cookie->getName(), $uri))) {
-                $existentCookie->update($cookie);
-                continue;
-            }
-
-            $this->cookies[] = $cookie;
+            $this->addRawCookie($raw, $uri);
         }
 
         return $this;
