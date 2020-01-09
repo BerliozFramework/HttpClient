@@ -10,18 +10,15 @@
  * file that was distributed with this source code, to the root.
  */
 
-declare(strict_types=1);
+namespace Berlioz\Http\Client\Tests\Cookies;
 
-namespace Berlioz\Http\Client\Exception;
+use Berlioz\Http\Client\Cookies\Cookie;
+use Berlioz\Http\Client\Cookies\CookiesManager;
 
-use Exception;
-use Psr\Http\Client\ClientExceptionInterface;
-
-/**
- * Class HttpClientException.
- *
- * @package Berlioz\Http\Client\Exception
- */
-class HttpClientException extends Exception implements ClientExceptionInterface
+class FakeCookiesManager extends CookiesManager
 {
+    public function addCookie(Cookie $cookie)
+    {
+        $this->cookies[] = $cookie;
+    }
 }

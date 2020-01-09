@@ -28,7 +28,7 @@ class ClientTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        self::$process = new Process("php -S localhost:8080 -t " . realpath(__DIR__ . '/server'));
+        self::$process = new Process(['php', '-S', 'localhost:8080', '-t', realpath(__DIR__ . '/server')]);
         self::$process->start();
         usleep(100000);
     }
@@ -204,13 +204,15 @@ class ClientTest extends TestCase
         $client->setDefaultHeader('Header1', 'Value1', false);
         $this->assertEquals(
             array_merge(
-                $defaultHeaders, [
-                'Header1' => [
-                    'Value2',
-                    'Value1',
-                ],
-            ]
-            ), $property->getValue($client)
+                $defaultHeaders,
+                [
+                    'Header1' => [
+                        'Value2',
+                        'Value1',
+                    ],
+                ]
+            ),
+            $property->getValue($client)
         );
 
         // Test request headers
@@ -237,14 +239,14 @@ class ClientTest extends TestCase
 
     public function testCurlOptions()
     {
-        $options = [CURL_HTTP_VERSION_1_0, CURL_IPRESOLVE_V6];
+        $options = [CURL_HTTP_VERSION_1_0, CURLOPT_IPRESOLVE];
         $client = new Client();
 
         $client->setCurlOptions($options);
         $this->assertEquals($options, $client->getCurlOptions());
 
-        $client->setCurlOptions([CURL_IPRESOLVE_V6], true);
-        $this->assertEquals([CURL_IPRESOLVE_V6], $client->getCurlOptions());
+        $client->setCurlOptions([CURLOPT_IPRESOLVE], true);
+        $this->assertEquals([CURLOPT_IPRESOLVE], $client->getCurlOptions());
 
         $client->setCurlOptions(array_merge($options, [CURLINFO_HEADER_OUT]));
         $this->assertEquals($options, $client->getCurlOptions());
@@ -256,7 +258,7 @@ class ClientTest extends TestCase
         $client = new Client;
         $client->request('get', $uri);
 
-        $this->assertEquals('test=value', $client->getCookies()->getCookiesForUri($uri));
+        $this->assertEquals('test=value', implode('; ', $client->getCookies()->getCookiesForUri($uri)));
     }
 
     public function testSerialization()

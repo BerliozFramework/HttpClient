@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client;
 
+use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\NetworkException;
@@ -31,6 +32,7 @@ use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Serializable;
+
 use function mb_convert_case;
 
 // Constants
@@ -47,7 +49,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     private $defaultHeaders;
     /** @var \Psr\Http\Message\MessageInterface[][] History */
     private $history;
-    /** @var \Berlioz\Http\Client\Cookies Cookies */
+    /** @var \Berlioz\Http\Client\Cookies\CookiesManager CookiesManager */
     private $cookies;
     /** @var resource|false File log pointer */
     private $fp;
@@ -68,27 +70,26 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             'logFile' => null,
             'exceptions' => true,
         ];
-        $this->options = array_merge($this->options, $options);
+        $this->options = array_replace($this->options, $options);
 
         // Init CURL options
         $this->curlOptions = [];
 
         // Default headers
-        $this->defaultHeaders =
-            [
-                'Accept' => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
-                'User-Agent' => ['BerliozBot/1.0'],
-                'Accept-Language' => ['fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'],
-                'Accept-Encoding' => ['gzip, deflate'],
-                'Accept-Charset' => ['ISO-8859-1,utf-8;q=0.7,*;q=0.7'],
-                'Connection' => ['close'],
-            ];
+        $this->defaultHeaders = [
+            'Accept' => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
+            'User-Agent' => ['BerliozBot/1.0'],
+            'Accept-Language' => ['fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'],
+            'Accept-Encoding' => ['gzip, deflate'],
+            'Accept-Charset' => ['ISO-8859-1,utf-8;q=0.7,*;q=0.7'],
+            'Connection' => ['close'],
+        ];
 
         // Init history
         $this->history = [];
 
         // Init cookies
-        $this->cookies = new Cookies;
+        $this->cookies = new CookiesManager;
     }
 
     /**
@@ -180,8 +181,10 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      *
      * @param array $curlOptions
      * @param bool $erase Erase all existent options (default: false)
+     *
+     * @return static
      */
-    public function setCurlOptions(array $curlOptions, bool $erase = false)
+    public function setCurlOptions(array $curlOptions, bool $erase = false): Client
     {
         if (!$erase) {
             $curlOptions = array_replace($this->curlOptions, $curlOptions);
@@ -203,11 +206,9 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             $reservedOptions[] = CURLOPT_FOLLOWLOCATION;
         }
 
-        foreach ($reservedOptions as $reservedOption) {
-            unset($curlOptions[$reservedOption]);
-        }
+        $this->curlOptions = array_diff($curlOptions, $reservedOptions);
 
-        $this->curlOptions = $curlOptions;
+        return $this;
     }
 
     /**
@@ -225,14 +226,20 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      *
      * @param array $headers
      * @param bool $erase Erase if exists (default: true)
+     *
+     * @return static
      */
-    public function setDefaultHeaders(array $headers, bool $erase = true)
+    public function setDefaultHeaders(array $headers, bool $erase = true): Client
     {
         if ($erase) {
             $this->defaultHeaders = $headers;
-        } else {
-            $this->defaultHeaders = array_merge($this->defaultHeaders, $headers);
+
+            return $this;
         }
+
+        $this->defaultHeaders = array_merge($this->defaultHeaders, $headers);
+
+        return $this;
     }
 
     /**
@@ -253,14 +260,18 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @param string $name Name
      * @param string $value Value
      * @param bool $erase Erase if exists (default: true)
+     *
+     * @return static
      */
-    public function setDefaultHeader(string $name, string $value, bool $erase = true)
+    public function setDefaultHeader(string $name, string $value, bool $erase = true): Client
     {
         if ($erase || !isset($this->defaultHeaders[$name])) {
-            $this->defaultHeaders[$name] = (array)$value;
-        } else {
-            $this->defaultHeaders[$name] = array_merge($this->defaultHeaders[$name] ?? [], (array)$value);
+            unset($this->defaultHeaders[$name]);
         }
+
+        $this->defaultHeaders[$name] = array_merge((array)($this->defaultHeaders[$name] ?? []), (array)$value);
+
+        return $this;
     }
 
     /**
@@ -288,7 +299,8 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             $this->logger->log(
                 $logLevel,
                 sprintf(
-                    '%s / Request %s to %s, response %s', __METHOD__,
+                    '%s / Request %s to %s, response %s',
+                    __METHOD__,
                     $request->getMethod(),
                     $request->getUri(),
                     $response ?
@@ -314,7 +326,9 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
                     $str .= sprintf(
                         '%s %s HTTP/%s' . PHP_EOL,
                         $request->getMethod(),
-                        $request->getUri()->getPath() . (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
+                        $request->getUri()->getPath() . (!empty(
+                        $request->getUri()->getQuery()
+                        ) ? '?' . $request->getUri()->getQuery() : ''),
                         $request->getProtocolVersion()
                     );
 
@@ -382,18 +396,23 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     /**
      * Close log resource.
      *
+     * @return static
      * @throws \Berlioz\Http\Client\Exception\HttpClientException
      */
-    public function closeLogResource()
+    public function closeLogResource(): Client
     {
-        // Close resource
-        if (is_resource($this->fp)) {
-            if (!fclose($this->fp)) {
-                throw new HttpClientException('Unable to close log file pointer');
-            }
-
-            $this->fp = null;
+        if (!is_resource($this->fp)) {
+            return $this;
         }
+
+        // Close resource
+        if (!fclose($this->fp)) {
+            throw new HttpClientException('Unable to close log file pointer');
+        }
+
+        $this->fp = null;
+
+        return $this;
     }
 
     /**
@@ -403,17 +422,15 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      *
      * @return false|\Psr\Http\Message\MessageInterface[]
      */
-    public function getHistory(int $index = null)
+    public function getHistory(?int $index = null)
     {
-        if (is_null($index)) {
+        if (null === $index) {
             return $this->history;
-        } else {
-            if ($index == -1) {
-                return end($this->history);
-            } else {
-                return $this->history[$index] ?? false;
-            }
         }
+
+        $history = array_slice($this->history, $index, 1);
+
+        return reset($history);
     }
 
     /**
@@ -431,9 +448,9 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     /**
      * Get cookies manager.
      *
-     * @return \Berlioz\Http\Client\Cookies
+     * @return \Berlioz\Http\Client\Cookies\CookiesManager
      */
-    public function getCookies(): Cookies
+    public function getCookies(): CookiesManager
     {
         return $this->cookies;
     }
@@ -458,12 +475,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         $headers = array_map(
             function ($value) {
                 $value = explode(":", $value, 2);
-                $value = array_map(
-                    function ($value) {
-                        return trim($value);
-                    },
-                    $value
-                );
+                $value = array_map('trim', $value);
                 $value = array_filter($value);
 
                 return $value;
@@ -478,17 +490,17 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
 
             if (!isset($finalHeaders[$header[0]])) {
                 $finalHeaders[$header[0]] = [$header[1]];
-            } else {
-                $finalHeaders[$header[0]][] = $header[1];
+                continue;
             }
+
+            $finalHeaders[$header[0]][] = $header[1];
         }
 
         // Treat first header
+        $reasonPhrase = null;
         $matches = [];
-        if (preg_match("#^HTTP/([0-9\.]+) ([0-9]+) (.*)$#i", $firstHeader, $matches) === 1) {
+        if (preg_match("#^HTTP/([0-9.]+) ([0-9]+) (.*)$#i", $firstHeader, $matches) === 1) {
             $reasonPhrase = $matches[3];
-        } else {
-            $reasonPhrase = null;
         }
 
         return $finalHeaders;
@@ -558,124 +570,143 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      */
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
-        if (function_exists('curl_version')) {
-            $followLocationCounter = 0;
-            $originalRequest = $request;
+        if (!function_exists('curl_version')) {
+            throw new HttpClientException('CURL module required for HTTP Client');
+        }
 
-            // Add default headers
-            foreach ($this->defaultHeaders as $headerName => $headerValue) {
-                if (!$request->hasHeader($headerName)) {
-                    $request = $request->withHeader($headerName, $headerValue);
-                }
+        $followLocationCounter = 0;
+        $originalRequest = $request;
+
+        // Add default headers
+        foreach ($this->defaultHeaders as $headerName => $headerValue) {
+            if ($request->hasHeader($headerName)) {
+                continue;
             }
 
-            do {
-                // Init CURL
-                $request = $this->getCookies()->addCookiesToRequest($request);
-                $ch = $this->initCurl($request);
+            $request = $request->withHeader($headerName, $headerValue);
+        }
 
-                // Execute CURL request
-                $content = curl_exec($ch);
+        do {
+            // Init CURL
+            $request = $this->getCookies()->addCookiesToRequest($request);
+            $ch = $this->initCurl($request);
 
-                // CURL errors ?
-                if ($errno = curl_errno($ch)) {
+            // Execute CURL request
+            $content = curl_exec($ch);
+
+            // CURL errors ?
+            switch (curl_errno($ch)) {
+                case CURLE_OK:
+                    break;
+                case CURLE_URL_MALFORMAT:
+                case CURLE_URL_MALFORMAT_USER:
+                case CURLE_MALFORMAT_USER:
+                case CURLE_BAD_PASSWORD_ENTERED:
                     // Log request
                     $this->log($request);
 
-                    switch ($errno) {
-                        case CURLE_URL_MALFORMAT:
-                        case CURLE_URL_MALFORMAT_USER:
-                        case CURLE_MALFORMAT_USER:
-                        case CURLE_BAD_PASSWORD_ENTERED:
-                            throw new RequestException(sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request);
-                        default:
-                            throw new NetworkException(sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request);
-                    }
-                }
-
-                // Response
-                {
-                    // Headers
-                    $reasonPhrase = null;
-                    $headers = $this->parseHeaders((string)substr($content, 0, curl_getinfo($ch, CURLINFO_HEADER_SIZE)), $reasonPhrase);
-
-                    // Body
-                    $stream = new Stream();
-                    $streamData = substr($content, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
-                    if (isset($headers['Content-Encoding'])) {
-                        if (in_array('gzip', $headers['Content-Encoding'])) {
-                            $streamData = gzdecode($streamData);
-                        } elseif (in_array('deflate', $headers['Content-Encoding'])) {
-                            $streamData = gzinflate(trim($streamData));
-                        }
-                    }
-                    $stream->write((string)$streamData);
-
-                    // Construct object
-                    $response = new Response(
-                        $stream,
-                        curl_getinfo($ch, CURLINFO_HTTP_CODE),
-                        $headers,
-                        $reasonPhrase ?? ''
+                    throw new RequestException(
+                        sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request
                     );
+                default:
+                    // Log request
+                    $this->log($request);
 
-                    // Parse response cookies
-                    $this->getCookies()->addCookiesFromResponse($request->getUri(), $response);
-                }
+                    throw new NetworkException(
+                        sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request
+                    );
+            }
 
-                // Log request & response
-                $this->log($request, $response);
+            // Response
+            {
+                // Headers
+                $reasonPhrase = null;
+                $headers = $this->parseHeaders(
+                    (string)substr($content, 0, curl_getinfo($ch, CURLINFO_HEADER_SIZE)),
+                    $reasonPhrase
+                );
 
-                // Follow location ?
-                $followLocation = false;
-                if (!empty($newLocation = $response->getHeader('Location'))) {
-                    if ($followLocationCounter++ <= ($this->options['followLocationLimit'] ?? 5)) {
-                        $followLocation = true;
+                // Body
+                $stream = new Stream();
+                $streamData = substr($content, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
+                if (isset($headers['Content-Encoding'])) {
+                    // Gzip
+                    if (in_array('gzip', $headers['Content-Encoding'])) {
+                        $streamData = gzdecode($streamData);
+                    }
 
-                        if (empty($redirectUrl = curl_getinfo($ch)['redirect_url'])) {
-                            $redirectUrl = $newLocation[0];
-                        }
-
-                        $redirectUri = Uri::createFromString($redirectUrl);
-
-                        if (empty($redirectUri->getHost())) {
-                            $url = parse_url((string)$request->getUri());
-                            $redirectUri = $redirectUri->withHost($url['host']);
-
-                            if (!empty($url['scheme'])) {
-                                $redirectUri = $redirectUri->withScheme($url['scheme']);
-                            }
-                        }
-
-                        // Reset request for redirection, but keeps headers
-                        $request = $request->withMethod(Request::HTTP_METHOD_GET)
-                            ->withHeader('Referer', (string)$request->getUri())
-                            ->withUri($redirectUri)
-                            ->withBody(new Stream);
-
-                        // Add cookies to the new request
-                        $request = $this->getCookies()->addCookiesToRequest($request);
-                    } else {
-                        throw new RequestException('Too many redirection from host', $originalRequest);
+                    // Deflate
+                    if (in_array('deflate', $headers['Content-Encoding'])) {
+                        $streamData = gzinflate(trim($streamData));
                     }
                 }
-            } while ($followLocation);
+                $stream->write((string)$streamData);
 
-            // Exceptions if error?
-            if ($this->options['exceptions']) {
-                if (!$response || intval(substr((string)$response->getStatusCode(), 0, 1)) != 2) {
-                    throw new HttpException(
-                        sprintf('%d - %s', $response->getStatusCode(), $response->getReasonPhrase()),
-                        $originalRequest,
-                        $response
-                    );
+                // Construct object
+                $response = new Response(
+                    $stream,
+                    curl_getinfo($ch, CURLINFO_HTTP_CODE),
+                    $headers,
+                    $reasonPhrase ?? ''
+                );
+
+                // Parse response cookies
+                $this->getCookies()->addCookiesFromResponse($request->getUri(), $response);
+            }
+
+            // Log request & response
+            $this->log($request, $response);
+
+            $followLocation = false;
+            if (empty($newLocation = $response->getHeader('Location'))) {
+                continue;
+            }
+
+            // Follow location ?
+            $followLocation = ($followLocationCounter++ <= ($this->options['followLocationLimit'] ?? 5));
+            if (!$followLocation) {
+                throw new RequestException('Too many redirection from host', $originalRequest);
+            }
+
+            // Get redirect
+            if (empty($redirectUrl = curl_getinfo($ch)['redirect_url'])) {
+                $redirectUrl = $newLocation[0];
+            }
+            $redirectUri = Uri::createFromString($redirectUrl);
+
+            if (empty($redirectUri->getHost())) {
+                $url = parse_url((string)$request->getUri());
+                $redirectUri = $redirectUri->withHost($url['host']);
+
+                if (!empty($url['scheme'])) {
+                    $redirectUri = $redirectUri->withScheme($url['scheme']);
                 }
             }
 
-            return $response;
-        } else {
-            throw new HttpClientException('CURL module required for HTTP Client');
+            // Reset request for redirection, but keeps headers
+            $request =
+                $request
+                    ->withMethod(Request::HTTP_METHOD_GET)
+                    ->withHeader('Referer', (string)$request->getUri())
+                    ->withUri($redirectUri)
+                    ->withBody(new Stream);
+
+            // Add cookies to the new request
+            $request = $this->getCookies()->addCookiesToRequest($request);
+        } while ($followLocation);
+
+        // Exceptions if error?
+        if ($this->options['exceptions']) {
+            if (!$response || intval(substr((string)$response->getStatusCode(), 0, 1)) != 2) {
+                throw new HttpException(
+                    sprintf('%d - %s', $response->getStatusCode(), $response->getReasonPhrase()),
+                    $originalRequest,
+                    $response
+                );
+            }
         }
+
+        return $response;
     }
 
     /**
@@ -691,8 +722,13 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      *
      * @return \Psr\Http\Message\RequestInterface
      */
-    public function constructRequest(string $method, $uri, array $parameters = null, $body = null, array $options = []): RequestInterface
-    {
+    public function constructRequest(
+        string $method,
+        $uri,
+        array $parameters = null,
+        $body = null,
+        array $options = []
+    ): RequestInterface {
         // URI
         if (!$uri instanceof UriInterface) {
             $uri = Uri::createFromString($uri);
@@ -707,25 +743,20 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         $request = new Request($method, $uri);
 
         // Body
-        if (!is_null($body)) {
+        if (null !== $body) {
+            $stream = $body;
+
             if (!($body instanceof StreamInterface)) {
                 $stream = new Stream;
                 $stream->write($body);
-            } else {
-                $stream = $body;
             }
 
             $request = $request->withBody($stream);
         }
 
-        // Options
-        {
-            // Headers
-            if (!empty($options['headers'])) {
-                foreach ($options['headers'] as $headerName => $headerValue) {
-                    $request = $request->withHeader($headerName, $headerValue);
-                }
-            }
+        // Headers
+        if (!empty($options['headers'])) {
+            $request = $request->withHeaders((array)$options['headers']);
         }
 
         return $request;
@@ -745,8 +776,13 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function request(string $method, $uri, array $parameters = null, $body = null, array $options = [])
-    {
+    public function request(
+        string $method,
+        $uri,
+        array $parameters = null,
+        $body = null,
+        array $options = []
+    ): ResponseInterface {
         $request = $this->constructRequest($method, $uri, $parameters, $body, $options);
 
         return $this->sendRequest($request);
@@ -762,7 +798,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function get($uri, array $parameters = null, array $options = [])
+    public function get($uri, array $parameters = null, array $options = []): ResponseInterface
     {
         return $this->request('GET', $uri, $parameters, null, $options);
     }
@@ -777,7 +813,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function post($uri, $body = null, array $options = [])
+    public function post($uri, $body = null, array $options = []): ResponseInterface
     {
         return $this->request('POST', $uri, null, $body, $options);
     }
@@ -792,7 +828,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function patch($uri, $body = null, array $options = [])
+    public function patch($uri, $body = null, array $options = []): ResponseInterface
     {
         return $this->request('PATCH', $uri, null, $body, $options);
     }
@@ -807,7 +843,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function put($uri, $body = null, array $options = [])
+    public function put($uri, $body = null, array $options = []): ResponseInterface
     {
         return $this->request('PUT', $uri, null, $body, $options);
     }
@@ -822,7 +858,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function delete($uri, array $parameters = [], array $options = [])
+    public function delete($uri, array $parameters = [], array $options = []): ResponseInterface
     {
         return $this->request('DELETE', $uri, $parameters, null, $options);
     }
@@ -837,7 +873,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function options($uri, array $parameters = [], array $options = [])
+    public function options($uri, array $parameters = [], array $options = []): ResponseInterface
     {
         return $this->request('OPTIONS', $uri, $parameters, null, $options);
     }
@@ -852,7 +888,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function head($uri, array $parameters = [], array $options = [])
+    public function head($uri, array $parameters = [], array $options = []): ResponseInterface
     {
         return $this->request('HEAD', $uri, $parameters, null, $options);
     }
@@ -867,7 +903,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function connect($uri, $body, array $options = [])
+    public function connect($uri, $body, array $options = []): ResponseInterface
     {
         return $this->request('CONNECT', $uri, null, $body, $options);
     }
@@ -882,7 +918,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
      */
-    public function trace($uri, array $parameters = [], array $options = [])
+    public function trace($uri, array $parameters = [], array $options = []): ResponseInterface
     {
         return $this->request('TRACE', $uri, $parameters, null, $options);
     }
