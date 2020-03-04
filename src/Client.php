@@ -41,6 +41,7 @@ defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
 class Client implements ClientInterface, LoggerAwareInterface, Serializable
 {
     use LoggerAwareTrait;
+    use LogFormatterTrait;
     /** @var array Options */
     private $options;
     /** @var array CURL options */
@@ -317,73 +318,13 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         // Log all detail to file ?
         if (!empty($this->options['logFile'])) {
             if (is_resource($this->fp) || is_resource($this->fp = @fopen($this->options['logFile'], 'a'))) {
-                $str = '###### ' . date('c') . ' ######' . PHP_EOL . PHP_EOL .
-                    '>>>>>> Request' . PHP_EOL . PHP_EOL;
-
-                // Request
-                {
-                    // Main header
-                    $str .= sprintf(
-                        '%s %s HTTP/%s' . PHP_EOL,
-                        $request->getMethod(),
-                        $request->getUri()->getPath() . (!empty(
-                        $request->getUri()->getQuery()
-                        ) ? '?' . $request->getUri()->getQuery() : ''),
-                        $request->getProtocolVersion()
-                    );
-
-                    // Host
-                    $str .= sprintf('Host: %s', $request->getUri()->getHost());
-                    if ($request->getUri()->getPort()) {
-                        $str .= sprintf(':%d', $request->getUri()->getPort());
-                    }
-                    $str .= PHP_EOL;
-
-                    // Headers
-                    foreach ($request->getHeaders() as $key => $values) {
-                        foreach ($values as $value) {
-                            $str .= sprintf('%s: %s' . PHP_EOL, $key, $value);
-                        }
-                    }
-
-                    // Body
-                    $str .= PHP_EOL .
-                        ($request->getBody()->getSize() > 0 ? $request->getBody() : 'Empty body') .
-                        PHP_EOL .
-                        PHP_EOL;
-                }
-
-                $str .= '<<<<<< Response' . PHP_EOL . PHP_EOL;
-
-                // Response
-                if (null !== $response) {
-                    // Main header
-                    $str .= sprintf(
-                        'HTTP/%s %s %s' . PHP_EOL,
-                        $response->getProtocolVersion(),
-                        $response->getStatusCode(),
-                        $response->getReasonPhrase()
-                    );
-
-                    // Headers
-                    foreach ($response->getHeaders() as $key => $values) {
-                        foreach ($values as $value) {
-                            $str .= sprintf('%s: %s' . PHP_EOL, $key, $value);
-                        }
-                    }
-
-                    // Body
-                    $str .= PHP_EOL .
-                        ($response->getBody()->getSize() > 0 ? $response->getBody() : 'Empty body') .
-                        PHP_EOL .
-                        PHP_EOL;
-                } else {
-                    $str .= 'No response' .
-                        PHP_EOL .
-                        PHP_EOL;
-                }
-
-                $str .= PHP_EOL . PHP_EOL;
+                $str =
+                    '###### ' . date('c') . ' ######' . PHP_EOL . PHP_EOL .
+                    '>>>>>> Request' . PHP_EOL . PHP_EOL .
+                    $this->formatRequestLog($request) . PHP_EOL . PHP_EOL .
+                    '<<<<<< Response' . PHP_EOL . PHP_EOL .
+                    $this->formatResponseLog($response) . PHP_EOL . PHP_EOL .
+                    PHP_EOL . PHP_EOL;
 
                 // Write into logs
                 if (fwrite($this->fp, $str) === false) {
