@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Berlioz\Http\Client;
+namespace Berlioz\Http\Client\Components;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
@@ -21,7 +21,7 @@ use Psr\Http\Message\ResponseInterface;
 /**
  * Trait LogFormatterTrait.
  *
- * @package Berlioz\Http\Client
+ * @package Berlioz\Http\Client\Components
  */
 trait LogFormatterTrait
 {

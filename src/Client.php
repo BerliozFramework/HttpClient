@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client;
 
+use Berlioz\Http\Client\Components;
 use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Exception\HttpException;
@@ -27,10 +28,7 @@ use Berlioz\Http\Message\Uri;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
 use Serializable;
 
 use function mb_convert_case;
@@ -40,20 +38,16 @@ defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
 
 class Client implements ClientInterface, LoggerAwareInterface, Serializable
 {
-    use LoggerAwareTrait;
-    use LogFormatterTrait;
+    use Components\DefaultHeadersTrait;
+    use Components\HistoryTrait;
+    use Components\LogTrait;
+    use Components\RequestFactoryTrait;
     /** @var array Options */
     private $options;
     /** @var array CURL options */
     private $curlOptions;
-    /** @var array Default headers */
-    private $defaultHeaders;
-    /** @var \Psr\Http\Message\MessageInterface[][] History */
-    private $history;
     /** @var \Berlioz\Http\Client\Cookies\CookiesManager CookiesManager */
     private $cookies;
-    /** @var resource|false File log pointer */
-    private $fp;
 
     /**
      * Client constructor.
@@ -86,11 +80,8 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             'Connection' => ['close'],
         ];
 
-        // Init history
-        $this->history = [];
-
         // Init cookies
-        $this->cookies = new CookiesManager;
+        $this->cookies = new CookiesManager();
     }
 
     /**
@@ -208,180 +199,6 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         }
 
         $this->curlOptions = array_diff($curlOptions, $reservedOptions);
-
-        return $this;
-    }
-
-    /**
-     * Get default headers.
-     *
-     * @return array
-     */
-    public function getDefaultHeaders(): array
-    {
-        return $this->defaultHeaders;
-    }
-
-    /**
-     * Set default headers.
-     *
-     * @param array $headers
-     * @param bool $erase Erase if exists (default: true)
-     *
-     * @return static
-     */
-    public function setDefaultHeaders(array $headers, bool $erase = true): Client
-    {
-        if ($erase) {
-            $this->defaultHeaders = $headers;
-
-            return $this;
-        }
-
-        $this->defaultHeaders = array_merge($this->defaultHeaders, $headers);
-
-        return $this;
-    }
-
-    /**
-     * Get default header.
-     *
-     * @param string $name
-     *
-     * @return array
-     */
-    public function getDefaultHeader(string $name): array
-    {
-        return $this->defaultHeaders[$name] ?? [];
-    }
-
-    /**
-     * Set default header.
-     *
-     * @param string $name Name
-     * @param string $value Value
-     * @param bool $erase Erase if exists (default: true)
-     *
-     * @return static
-     */
-    public function setDefaultHeader(string $name, string $value, bool $erase = true): Client
-    {
-        if ($erase || !isset($this->defaultHeaders[$name])) {
-            unset($this->defaultHeaders[$name]);
-        }
-
-        $this->defaultHeaders[$name] = array_merge((array)($this->defaultHeaders[$name] ?? []), (array)$value);
-
-        return $this;
-    }
-
-    /**
-     * Log request and response.
-     *
-     * @param \Psr\Http\Message\RequestInterface $request
-     * @param \Psr\Http\Message\ResponseInterface $response
-     *
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException if unable to write logs
-     */
-    protected function log(RequestInterface $request, ResponseInterface $response = null)
-    {
-        $this->history[] = [
-            'request' => $request,
-            'response' => $response,
-        ];
-
-        // Logger
-        if (!empty($this->logger)) {
-            $logLevel = 'info';
-            if (!$response || intval(substr((string)$response->getStatusCode(), 0, 1)) != 2) {
-                $logLevel = 'warning';
-            }
-
-            $this->logger->log(
-                $logLevel,
-                sprintf(
-                    '%s / Request %s to %s, response %s',
-                    __METHOD__,
-                    $request->getMethod(),
-                    $request->getUri(),
-                    $response ?
-                        sprintf(
-                            '%d (%s)',
-                            $response->getStatusCode(),
-                            $response->getReasonPhrase()
-                        ) :
-                        'NONE'
-                )
-            );
-        }
-
-        // Log all detail to file ?
-        if (!empty($this->options['logFile'])) {
-            if (is_resource($this->fp) || is_resource($this->fp = @fopen($this->options['logFile'], 'a'))) {
-                $str =
-                    '###### ' . date('c') . ' ######' . PHP_EOL . PHP_EOL .
-                    '>>>>>> Request' . PHP_EOL . PHP_EOL .
-                    $this->formatRequestLog($request) . PHP_EOL . PHP_EOL .
-                    '<<<<<< Response' . PHP_EOL . PHP_EOL .
-                    $this->formatResponseLog($response) . PHP_EOL . PHP_EOL .
-                    PHP_EOL . PHP_EOL;
-
-                // Write into logs
-                if (fwrite($this->fp, $str) === false) {
-                    throw new HttpClientException('Unable to write logs');
-                }
-            }
-        }
-    }
-
-    /**
-     * Close log resource.
-     *
-     * @return static
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException
-     */
-    public function closeLogResource(): Client
-    {
-        if (!is_resource($this->fp)) {
-            return $this;
-        }
-
-        // Close resource
-        if (!fclose($this->fp)) {
-            throw new HttpClientException('Unable to close log file pointer');
-        }
-
-        $this->fp = null;
-
-        return $this;
-    }
-
-    /**
-     * Get history.
-     *
-     * @param int|null $index History index (null for all, -1 for last)
-     *
-     * @return false|\Psr\Http\Message\MessageInterface[]
-     */
-    public function getHistory(?int $index = null)
-    {
-        if (null === $index) {
-            return $this->history;
-        }
-
-        $history = array_slice($this->history, $index, 1);
-
-        return reset($history);
-    }
-
-    /**
-     * Clear history.
-     *
-     * @return \Berlioz\Http\Client\Client
-     */
-    public function clearHistory(): Client
-    {
-        $this->history = [];
 
         return $this;
     }
@@ -536,26 +353,27 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             $content = curl_exec($ch);
 
             // CURL errors ?
-            switch (curl_errno($ch)) {
-                case CURLE_OK:
-                    break;
-                case CURLE_URL_MALFORMAT:
-                case CURLE_URL_MALFORMAT_USER:
-                case CURLE_MALFORMAT_USER:
-                case CURLE_BAD_PASSWORD_ENTERED:
-                    // Log request
-                    $this->log($request);
+            try {
+                switch (curl_errno($ch)) {
+                    case CURLE_OK:
+                        break;
+                    case CURLE_URL_MALFORMAT:
+                    case CURLE_URL_MALFORMAT_USER:
+                    case CURLE_MALFORMAT_USER:
+                    case CURLE_BAD_PASSWORD_ENTERED:
+                        throw new RequestException(
+                            sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request
+                        );
+                    default:
+                        throw new NetworkException(
+                            sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request
+                        );
+                }
+            } catch (HttpException $e) {
+                $this->addHistory($request, null);
+                $this->log($request);
 
-                    throw new RequestException(
-                        sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request
-                    );
-                default:
-                    // Log request
-                    $this->log($request);
-
-                    throw new NetworkException(
-                        sprintf('CURL error : %s (%s)', curl_error($ch), $request->getUri()), $request
-                    );
+                throw $e;
             }
 
             // Response
@@ -596,6 +414,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             }
 
             // Log request & response
+            $this->addHistory($request, $response);
             $this->log($request, $response);
 
             $followLocation = false;
@@ -630,7 +449,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
                     ->withMethod(Request::HTTP_METHOD_GET)
                     ->withHeader('Referer', (string)$request->getUri())
                     ->withUri($redirectUri)
-                    ->withBody(new Stream);
+                    ->withBody(new Stream());
 
             // Add cookies to the new request
             $request = $this->getCookies()->addCookiesToRequest($request);
@@ -648,219 +467,5 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         }
 
         return $response;
-    }
-
-    /**
-     * Construct request.
-     *
-     * @param string $method Http method
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri
-     * @param array $parameters Get parameters
-     * @param string|\Psr\Http\Message\StreamInterface $body Body
-     * @param array $options Options
-     *
-     * @option array "headers" Headers of request
-     *
-     * @return \Psr\Http\Message\RequestInterface
-     */
-    public function constructRequest(
-        string $method,
-        $uri,
-        array $parameters = null,
-        $body = null,
-        array $options = []
-    ): RequestInterface {
-        // URI
-        if (!$uri instanceof UriInterface) {
-            $uri = Uri::createFromString($uri);
-        }
-
-        // Parameters
-        if (null !== $parameters) {
-            $uri = $uri->withQuery(http_build_query($parameters));
-        }
-
-        // Create request
-        $request = new Request($method, $uri);
-
-        // Body
-        if (null !== $body) {
-            $stream = $body;
-
-            if (!($body instanceof StreamInterface)) {
-                $stream = new Stream;
-                $stream->write($body);
-            }
-
-            $request = $request->withBody($stream);
-        }
-
-        // Headers
-        if (!empty($options['headers'])) {
-            $request = $request->withHeaders((array)$options['headers']);
-        }
-
-        return $request;
-    }
-
-    /**
-     * Request.
-     *
-     * @param string $method Http method
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri
-     * @param array $parameters Get parameters
-     * @param string|\Psr\Http\Message\StreamInterface $body Body
-     * @param array $options Options
-     *
-     * @option array "headers" Headers of request
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function request(
-        string $method,
-        $uri,
-        array $parameters = null,
-        $body = null,
-        array $options = []
-    ): ResponseInterface {
-        $request = $this->constructRequest($method, $uri, $parameters, $body, $options);
-
-        return $this->sendRequest($request);
-    }
-
-    /**
-     * Get request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param array $parameters Get parameters
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function get($uri, array $parameters = null, array $options = []): ResponseInterface
-    {
-        return $this->request('GET', $uri, $parameters, null, $options);
-    }
-
-    /**
-     * Post request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function post($uri, $body = null, array $options = []): ResponseInterface
-    {
-        return $this->request('POST', $uri, null, $body, $options);
-    }
-
-    /**
-     * Patch request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function patch($uri, $body = null, array $options = []): ResponseInterface
-    {
-        return $this->request('PATCH', $uri, null, $body, $options);
-    }
-
-    /**
-     * Put request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function put($uri, $body = null, array $options = []): ResponseInterface
-    {
-        return $this->request('PUT', $uri, null, $body, $options);
-    }
-
-    /**
-     * Delete request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param array $parameters Get parameters
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function delete($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
-        return $this->request('DELETE', $uri, $parameters, null, $options);
-    }
-
-    /**
-     * Options request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param array $parameters Get parameters
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function options($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
-        return $this->request('OPTIONS', $uri, $parameters, null, $options);
-    }
-
-    /**
-     * Head request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param array $parameters Get parameters
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function head($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
-        return $this->request('HEAD', $uri, $parameters, null, $options);
-    }
-
-    /**
-     * Connect request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function connect($uri, $body, array $options = []): ResponseInterface
-    {
-        return $this->request('CONNECT', $uri, null, $body, $options);
-    }
-
-    /**
-     * Trace request.
-     *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param array $parameters Get parameters
-     * @param array $options Options
-     *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
-     */
-    public function trace($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
-        return $this->request('TRACE', $uri, $parameters, null, $options);
     }
 }
