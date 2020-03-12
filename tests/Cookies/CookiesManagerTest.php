@@ -13,6 +13,7 @@
 namespace Berlioz\Http\Client\Tests\Cookies;
 
 use Berlioz\Http\Client\Cookies\Cookie;
+use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Uri;
@@ -22,7 +23,7 @@ class CookiesManagerTest extends TestCase
 {
     public function testGetCookiesForUri()
     {
-        $cookiesManager = new FakeCookiesManager();
+        $cookiesManager = new CookiesManager();
         $cookiesManager->addCookie(Cookie::parse('test=value; Expires=Wed, 21 Oct 2050 07:28:00 GMT; Domain=getberlioz.com'));
         $cookiesManager->addCookie(Cookie::parse('test2=value2; Expires=Wed, 21 Oct 2050 07:28:00 GMT; Domain=www.getberlioz.fr'));
 
@@ -56,7 +57,7 @@ class CookiesManagerTest extends TestCase
 
     public function testAddCookiesFromResponse()
     {
-        $cookiesManager = new FakeCookiesManager();
+        $cookiesManager = new CookiesManager();
 
         $uri = new Uri('http', 'getberlioz.com');
         $response = new Response(null,
@@ -75,7 +76,7 @@ class CookiesManagerTest extends TestCase
 
     public function testAddCookiesToRequest()
     {
-        $cookiesManager = new FakeCookiesManager();
+        $cookiesManager = new CookiesManager();
         $cookiesManager->addCookie(Cookie::parse('test=value; Expires=Wed, 21 Oct 2050 07:28:00 GMT; Domain=getberlioz.com'));
         $cookiesManager->addCookie(Cookie::parse('secured=value2; Expires=Wed, 21 Oct 2050 07:28:00 GMT; Domain=getberlioz.com; Secure'));
         $cookiesManager->addCookie(Cookie::parse('expired=value; Expires=Wed, 21 Oct 2000 07:28:00 GMT; Domain=getberlioz.com'));

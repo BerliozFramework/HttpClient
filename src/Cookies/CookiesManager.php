@@ -26,7 +26,7 @@ use Psr\Http\Message\UriInterface;
  */
 class CookiesManager implements Countable
 {
-    /** @var array CookiesManager */
+    /** @var \Berlioz\Http\Client\Cookies\Cookie[] CookiesManager */
     protected $cookies = [];
 
     /**
@@ -75,7 +75,6 @@ class CookiesManager implements Countable
     {
         $uriCookies = [];
 
-        /** @var \Berlioz\Http\Client\Cookies\Cookie $cookie */
         foreach ($this->cookies as $cookie) {
             if (!$cookie->isValidForUri($uri)) {
                 continue;
@@ -85,6 +84,27 @@ class CookiesManager implements Countable
         }
 
         return $uriCookies;
+    }
+
+    /**
+     * Add cookie.
+     *
+     * @param \Berlioz\Http\Client\Cookies\Cookie $cookie
+     *
+     * @return CookiesManager
+     */
+    public function addCookie(Cookie $cookie): CookiesManager
+    {
+        foreach ($this->cookies as $aCookie) {
+            if ($aCookie->isSame($cookie)) {
+                $aCookie->update($cookie);
+                return $this;
+            }
+        }
+
+        $this->cookies[] = $cookie;
+
+        return $this;
     }
 
     /**
@@ -98,15 +118,7 @@ class CookiesManager implements Countable
      */
     public function addRawCookie(string $raw, ?UriInterface $uri = null): CookiesManager
     {
-        $cookie = Cookie::parse($raw, $uri);
-
-        if (null !== ($existentCookie = $this->getCookie($cookie->getName(), $uri))) {
-            $existentCookie->update($cookie);
-
-            return $this;
-        }
-
-        $this->cookies[] = $cookie;
+        $this->addCookie(Cookie::parse($raw, $uri));
 
         return $this;
     }
