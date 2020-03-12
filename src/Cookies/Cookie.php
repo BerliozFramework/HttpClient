@@ -195,6 +195,24 @@ class Cookie
     }
 
     /**
+     * Is same cookie?
+     *
+     * @param \Berlioz\Http\Client\Cookies\Cookie $cookie
+     *
+     * @return bool
+     */
+    public function isSame(Cookie $cookie): bool
+    {
+        return
+            $this->getName() === $cookie->getName() &&
+            $this->getDomain() === $cookie->getDomain() &&
+            $this->getPath() === $cookie->getPath() &&
+            $this->getVersion() === $cookie->getVersion() &&
+            $this->isHttpOnly() === $cookie->isHttpOnly() &&
+            $this->isSecure() === $cookie->isSecure();
+    }
+
+    /**
      * Is valid for URI?
      *
      * @param \Psr\Http\Message\UriInterface $uri
