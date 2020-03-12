@@ -418,6 +418,19 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             $this->log($request, $response);
 
             $followLocation = false;
+            if (!in_array(
+                $response->getStatusCode(),
+                [
+                    Response::HTTP_STATUS_CREATED,
+                    Response::HTTP_STATUS_MOVED_PERMANENTLY,
+                    Response::HTTP_STATUS_MOVED_TEMPORARILY,
+                    Response::HTTP_STATUS_SEE_OTHER,
+                    307,
+                    308
+                ]
+            )) {
+                continue;
+            }
             if (empty($newLocation = $response->getHeader('Location'))) {
                 continue;
             }
