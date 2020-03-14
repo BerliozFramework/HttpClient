@@ -145,6 +145,30 @@ class Cookie
     }
 
     /**
+     * Is expired?
+     *
+     * @param \DateTime|null $now
+     *
+     * @return bool
+     */
+    public function isExpired(?DateTime $now = null): bool
+    {
+        if (null === $this->expires) {
+            return false;
+        }
+
+        if (null === $now) {
+            try {
+                $now = new DateTime();
+            } catch (Exception $e) {
+                return false;
+            }
+        }
+
+        return $this->expires < $now;
+    }
+
+    /**
      * Get path.
      *
      * @return string|null
@@ -233,7 +257,7 @@ class Cookie
         // Expired?
         if (null !== $this->expires) {
             try {
-                if ($this->expires < (new DateTime)) {
+                if ($this->expires < (new DateTime())) {
                     return false;
                 }
             } catch (Exception $exception) {
