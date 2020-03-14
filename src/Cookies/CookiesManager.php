@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Cookies;
 
+use ArrayIterator;
 use Countable;
+use IteratorAggregate;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
@@ -24,7 +26,7 @@ use Psr\Http\Message\UriInterface;
  *
  * @package Berlioz\Http\Client\Cookies
  */
-class CookiesManager implements Countable
+class CookiesManager implements IteratorAggregate, Countable
 {
     /** @var \Berlioz\Http\Client\Cookies\Cookie[] CookiesManager */
     protected $cookies = [];
@@ -35,6 +37,14 @@ class CookiesManager implements Countable
     public function __construct()
     {
         $this->cookies = [];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getIterator()
+    {
+        return new ArrayIterator($this->cookies);
     }
 
     /**
