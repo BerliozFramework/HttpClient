@@ -255,14 +255,8 @@ class Cookie
         }
 
         // Expired?
-        if (null !== $this->expires) {
-            try {
-                if ($this->expires < (new DateTime())) {
-                    return false;
-                }
-            } catch (Exception $exception) {
-                return false;
-            }
+        if ($this->isExpired()) {
+            return false;
         }
 
         // Not valid path?
