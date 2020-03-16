@@ -91,4 +91,20 @@ class CookiesManagerTest extends TestCase
         $request = $cookiesManager->addCookiesToRequest($request);
         $this->assertEquals(['test=value; secured=value2'], $request->getHeader('Cookie'));
     }
+
+    public function testRemoveCookie()
+    {
+        $uri = new Uri('https', 'getberlioz.com', null, '/path');
+
+        $cookiesManager = new CookiesManager();
+        $cookiesManager->addCookie(Cookie::parse('foo=bar; Expires=Wed, 21 Oct 2050 07:28:00 GMT; Domain=getberlioz.com'));
+        $cookiesManager->addCookie($cookieToRemove = Cookie::parse('foo=baz; Path=/path, Expires=Wed, 21 Oct 2050 07:28:00 GMT; Domain=getberlioz.com; Secure'));
+
+        $this->assertCount(2, $cookiesManager);
+
+        $cookiesManager->removeCookie($cookieToRemove);
+
+        $this->assertCount(1, $cookiesManager);
+        $this->assertEquals('bar', $cookiesManager->getCookie('foo', $uri)->getValue());
+    }
 }

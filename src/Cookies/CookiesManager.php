@@ -175,4 +175,20 @@ class CookiesManager implements IteratorAggregate, Countable
 
         return $request;
     }
+
+    /**
+     * Remove cookie.
+     *
+     * @param \Berlioz\Http\Client\Cookies\Cookie $cookie
+     *
+     * @return static
+     */
+    public function removeCookie(Cookie $cookie): CookiesManager
+    {
+        while (false !== ($key = array_search($cookie, $this->cookies, true))) {
+            unset($this->cookies[$key]);
+        }
+
+        return $this;
+    }
 }
