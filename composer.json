@@ -21,7 +21,7 @@
     }
   },
   "require": {
-    "php": "^7.2 || ^8.0",
+    "php": "^7.1 || ^8.0",
     "ext-curl": "*",
     "ext-mbstring": "*",
     "ext-zlib": "*",
@@ -34,7 +34,7 @@
     "symfony/process": "^4.1"
   },
   "suggest": {
-    "berlioz/html-selector": "@dev"
+    "berlioz/html-selector": "To query HTML result like jQuery in JavaScript."
   },
   "provide": {
     "psr/http-client-implementation": "^1.0",
