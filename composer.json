@@ -1,13 +1,13 @@
 {
   "name": "berlioz/http-client",
-  "description": "Berlioz HTTP Client",
+  "description": "Berlioz HTTP Client is a PHP library to request HTTP server with continuous navigation, including cookies, sessions...",
   "minimum-stability": "stable",
   "license": "MIT",
-  "homepage": "http://www.berlioz-framework.com",
+  "homepage": "https://getberlioz.com",
   "authors": [
     {
       "name": "Ronan Giron",
-      "email": "ronan.giron@berlioz-framework.com"
+      "email": "ronan@getberlioz.com"
     }
   ],
   "autoload": {
