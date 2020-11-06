@@ -1,5 +1,11 @@
 # Berlioz HTTP Client
 
+[![Latest Version](https://img.shields.io/packagist/v/berlioz/http-client.svg?style=flat-square)](https://github.com/BerliozFramework/HttpClient/releases)
+[![Software license](https://img.shields.io/github/license/BerliozFramework/HttpClient.svg?style=flat-square)](https://github.com/BerliozFramework/HttpClient/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/com/BerliozFramework/HttpClient/master.svg?style=flat-square)](https://travis-ci.com/BerliozFramework/HttpClient)
+[![Quality Grade](https://img.shields.io/codacy/grade/3e9df26a706d4ac285e1a49176665751/master.svg?style=flat-square)](https://app.codacy.com/gh/BerliozFramework/HttpClient)
+[![Total Downloads](https://img.shields.io/packagist/dt/berlioz/http-client.svg?style=flat-square)](https://packagist.org/packages/berlioz/http-client)
+
 **Berlioz HTTP Client** is a PHP library to request HTTP server with continuous navigation, including cookies, sessions...
 Implements PSR-18 (HTTP Client), PSR-7 (HTTP message interfaces) and PSR-17 (HTTP Factories) standards.
 
