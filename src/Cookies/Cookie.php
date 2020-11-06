@@ -31,7 +31,7 @@ class Cookie
     private $name;
     /** @var string|null Value */
     private $value;
-    /** @var \DateTime|null Expires */
+    /** @var DateTime|null Expires */
     private $expires;
     /** @var string|null Path */
     private $path;
@@ -48,14 +48,14 @@ class Cookie
      * Parse raw cookie.
      *
      * @param string $raw
-     * @param \Psr\Http\Message\UriInterface|null $uri
+     * @param UriInterface|null $uri
      *
-     * @return \Berlioz\Http\Client\Cookies\Cookie
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException
+     * @return Cookie
+     * @throws HttpClientException
      */
     public static function parse(string $raw, ?UriInterface $uri = null): Cookie
     {
-        $cookie = new Cookie;
+        $cookie = new Cookie();
 
         // Parse
         $cookieTmp = explode(";", $raw);
@@ -107,7 +107,7 @@ class Cookie
     }
 
     /**
-     * @inheritDoc
+     * __toString() PHP magic method.
      */
     public function __toString(): string
     {
@@ -137,7 +137,7 @@ class Cookie
     /**
      * Get expiration.
      *
-     * @return \DateTime|null
+     * @return DateTime|null
      */
     public function getExpires(): ?DateTime
     {
@@ -147,7 +147,7 @@ class Cookie
     /**
      * Is expired?
      *
-     * @param \DateTime|null $now
+     * @param DateTime|null $now
      *
      * @return bool
      */
@@ -221,7 +221,7 @@ class Cookie
     /**
      * Is same cookie?
      *
-     * @param \Berlioz\Http\Client\Cookies\Cookie $cookie
+     * @param Cookie $cookie
      *
      * @return bool
      */
@@ -239,7 +239,7 @@ class Cookie
     /**
      * Is valid for URI?
      *
-     * @param \Psr\Http\Message\UriInterface $uri
+     * @param UriInterface $uri
      *
      * @return bool
      */
@@ -280,7 +280,7 @@ class Cookie
     /**
      * Update cookie.
      *
-     * @param \Berlioz\Http\Client\Cookies\Cookie $cookie
+     * @param Cookie $cookie
      *
      * @return static
      */

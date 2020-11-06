@@ -28,7 +28,7 @@ trait LogFormatterTrait
     /**
      * Format request log.
      *
-     * @param \Psr\Http\Message\RequestInterface $request
+     * @param RequestInterface $request
      *
      * @return string
      */
@@ -61,7 +61,7 @@ trait LogFormatterTrait
     /**
      * Format response log.
      *
-     * @param \Psr\Http\Message\ResponseInterface|null $response
+     * @param ResponseInterface|null $response
      *
      * @return string
      */
@@ -89,7 +89,7 @@ trait LogFormatterTrait
     /**
      * Format message log.
      *
-     * @param \Psr\Http\Message\MessageInterface $message
+     * @param MessageInterface $message
      *
      * @return string
      */

@@ -42,11 +42,12 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     use Components\HistoryTrait;
     use Components\LogTrait;
     use Components\RequestFactoryTrait;
+
     /** @var array Options */
     private $options;
     /** @var array CURL options */
     private $curlOptions;
-    /** @var \Berlioz\Http\Client\Cookies\CookiesManager CookiesManager */
+    /** @var CookiesManager CookiesManager */
     private $cookies;
 
     /**
@@ -87,7 +88,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     /**
      * Client destructor.
      *
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException if unable to close log file pointer
+     * @throws HttpClientException if unable to close log file pointer
      */
     public function __destruct()
     {
@@ -206,7 +207,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     /**
      * Get cookies manager.
      *
-     * @return \Berlioz\Http\Client\Cookies\CookiesManager
+     * @return CookiesManager
      */
     public function getCookies(): CookiesManager
     {
@@ -267,7 +268,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     /**
      * Init CURL options.
      *
-     * @param \Psr\Http\Message\RequestInterface $request
+     * @param RequestInterface $request
      *
      * @return resource
      */
@@ -280,7 +281,6 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         switch ($request->getProtocolVersion()) {
             case 1.0:
                 curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
-                break;
                 break;
             case 2.0:
                 curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);

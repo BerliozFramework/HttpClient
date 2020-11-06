@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Components;
 
-use Berlioz\Http\Client\Client;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -29,16 +28,17 @@ trait LogTrait
 {
     use LoggerAwareTrait;
     use LogFormatterTrait;
+
     /** @var resource|false File log pointer */
     private $logFp;
 
     /**
      * Log request and response.
      *
-     * @param \Psr\Http\Message\RequestInterface $request
-     * @param \Psr\Http\Message\ResponseInterface $response
+     * @param RequestInterface $request
+     * @param ResponseInterface|null $response
      *
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException if unable to write logs
+     * @throws HttpClientException if unable to write logs
      */
     protected function log(RequestInterface $request, ResponseInterface $response = null)
     {
@@ -90,9 +90,9 @@ trait LogTrait
      * Close log resource.
      *
      * @return static
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException
+     * @throws HttpClientException
      */
-    public function closeLogResource(): Client
+    public function closeLogResource()
     {
         if (!is_resource($this->logFp)) {
             return $this;

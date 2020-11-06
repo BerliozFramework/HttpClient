@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client\Cookies;
 
 use ArrayIterator;
+use Berlioz\Http\Client\Exception\HttpClientException;
 use Countable;
 use IteratorAggregate;
 use Psr\Http\Message\RequestInterface;
@@ -28,7 +29,7 @@ use Psr\Http\Message\UriInterface;
  */
 class CookiesManager implements IteratorAggregate, Countable
 {
-    /** @var \Berlioz\Http\Client\Cookies\Cookie[] CookiesManager */
+    /** @var Cookie[] CookiesManager */
     protected $cookies = [];
 
     /**
@@ -59,9 +60,9 @@ class CookiesManager implements IteratorAggregate, Countable
      * Get cookie.
      *
      * @param string $name
-     * @param \Psr\Http\Message\UriInterface $uri
+     * @param UriInterface $uri
      *
-     * @return \Berlioz\Http\Client\Cookies\Cookie|null
+     * @return Cookie|null
      */
     public function getCookie(string $name, UriInterface $uri): ?Cookie
     {
@@ -77,9 +78,9 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * Get cookies line for specific uri
      *
-     * @param \Psr\Http\Message\UriInterface $uri
+     * @param UriInterface $uri
      *
-     * @return \Berlioz\Http\Client\Cookies\Cookie[]
+     * @return Cookie[]
      */
     public function getCookiesForUri(UriInterface $uri): array
     {
@@ -99,7 +100,7 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * Add cookie.
      *
-     * @param \Berlioz\Http\Client\Cookies\Cookie $cookie
+     * @param Cookie $cookie
      *
      * @return CookiesManager
      */
@@ -121,10 +122,10 @@ class CookiesManager implements IteratorAggregate, Countable
      * Add raw cookie.
      *
      * @param string $raw
-     * @param \Psr\Http\Message\UriInterface|null $uri
+     * @param UriInterface|null $uri
      *
      * @return static
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException
+     * @throws HttpClientException
      */
     public function addRawCookie(string $raw, ?UriInterface $uri = null): CookiesManager
     {
@@ -136,11 +137,11 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * Add cookies from response
      *
-     * @param \Psr\Http\Message\UriInterface $uri
-     * @param \Psr\Http\Message\ResponseInterface $response
+     * @param UriInterface $uri
+     * @param ResponseInterface $response
      *
      * @return static
-     * @throws \Berlioz\Http\Client\Exception\HttpClientException
+     * @throws HttpClientException
      */
     public function addCookiesFromResponse(UriInterface $uri, ResponseInterface $response): CookiesManager
     {
@@ -156,10 +157,10 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * Add header line for cookies
      *
-     * @param \Psr\Http\Message\RequestInterface $request
+     * @param RequestInterface $request
      * @param bool $erase Erase Cookie line ? (default: true)
      *
-     * @return \Psr\Http\Message\RequestInterface
+     * @return RequestInterface
      */
     public function addCookiesToRequest(RequestInterface $request, bool $erase = true): RequestInterface
     {
@@ -179,7 +180,7 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * Remove cookie.
      *
-     * @param \Berlioz\Http\Client\Cookies\Cookie $cookie
+     * @param Cookie $cookie
      *
      * @return static
      */

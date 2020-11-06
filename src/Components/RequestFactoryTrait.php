@@ -17,6 +17,7 @@ namespace Berlioz\Http\Client\Components;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Stream;
 use Berlioz\Http\Message\Uri;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
@@ -32,10 +33,10 @@ trait RequestFactoryTrait
     /**
      * Sends a PSR-7 request and returns a PSR-7 response.
      *
-     * @param \Psr\Http\Message\RequestInterface $request
+     * @param RequestInterface $request
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens while processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens while processing the request.
      */
     abstract public function sendRequest(RequestInterface $request): ResponseInterface;
 
@@ -43,19 +44,19 @@ trait RequestFactoryTrait
      * Construct request.
      *
      * @param string $method Http method
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri
-     * @param array $parameters Get parameters
-     * @param string|\Psr\Http\Message\StreamInterface $body Body
+     * @param string|UriInterface $uri Uri
+     * @param array|null $parameters Get parameters
+     * @param string|StreamInterface|null $body Body
      * @param array $options Options
      *
      * @option array "headers" Headers of request
      *
-     * @return \Psr\Http\Message\RequestInterface
+     * @return RequestInterface
      */
     public function constructRequest(
         string $method,
         $uri,
-        array $parameters = null,
+        ?array $parameters = null,
         $body = null,
         array $options = []
     ): RequestInterface {
@@ -96,15 +97,15 @@ trait RequestFactoryTrait
      * Request.
      *
      * @param string $method Http method
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri
-     * @param array $parameters Get parameters
-     * @param string|\Psr\Http\Message\StreamInterface $body Body
+     * @param string|UriInterface $uri Uri
+     * @param array|null $parameters Get parameters
+     * @param string|StreamInterface|null $body Body
      * @param array $options Options
      *
      * @option array "headers" Headers of request
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function request(
         string $method,
@@ -121,12 +122,12 @@ trait RequestFactoryTrait
     /**
      * Get request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param array $parameters Get parameters
+     * @param string|UriInterface $uri Uri of request
+     * @param array|null $parameters Get parameters
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function get($uri, array $parameters = null, array $options = []): ResponseInterface
     {
@@ -136,12 +137,12 @@ trait RequestFactoryTrait
     /**
      * Post request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
+     * @param string|UriInterface $uri Uri of request
+     * @param string|StreamInterface|null $body Body of request
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function post($uri, $body = null, array $options = []): ResponseInterface
     {
@@ -151,12 +152,12 @@ trait RequestFactoryTrait
     /**
      * Patch request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
+     * @param string|UriInterface $uri Uri of request
+     * @param string|StreamInterface|null $body Body of request
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function patch($uri, $body = null, array $options = []): ResponseInterface
     {
@@ -166,12 +167,12 @@ trait RequestFactoryTrait
     /**
      * Put request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
+     * @param string|UriInterface $uri Uri of request
+     * @param string|StreamInterface|null $body Body of request
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function put($uri, $body = null, array $options = []): ResponseInterface
     {
@@ -181,12 +182,12 @@ trait RequestFactoryTrait
     /**
      * Delete request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|UriInterface $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function delete($uri, array $parameters = [], array $options = []): ResponseInterface
     {
@@ -196,12 +197,12 @@ trait RequestFactoryTrait
     /**
      * Options request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|UriInterface $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function options($uri, array $parameters = [], array $options = []): ResponseInterface
     {
@@ -211,12 +212,12 @@ trait RequestFactoryTrait
     /**
      * Head request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|UriInterface $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function head($uri, array $parameters = [], array $options = []): ResponseInterface
     {
@@ -226,12 +227,12 @@ trait RequestFactoryTrait
     /**
      * Connect request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|UriInterface $uri Uri of request
      * @param string|StreamInterface $body Body of request
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function connect($uri, $body, array $options = []): ResponseInterface
     {
@@ -241,12 +242,12 @@ trait RequestFactoryTrait
     /**
      * Trace request.
      *
-     * @param string|\Psr\Http\Message\UriInterface $uri Uri of request
+     * @param string|UriInterface $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens during processing the request.
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
      */
     public function trace($uri, array $parameters = [], array $options = []): ResponseInterface
     {

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Components;
 
+use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -24,14 +25,14 @@ use Psr\Http\Message\ResponseInterface;
  */
 trait HistoryTrait
 {
-    /** @var \Psr\Http\Message\MessageInterface[][] History */
+    /** @var MessageInterface[][] History */
     protected $history = [];
 
     /**
      * Add history.
      *
-     * @param \Psr\Http\Message\RequestInterface $request
-     * @param \Psr\Http\Message\ResponseInterface|null $response
+     * @param RequestInterface $request
+     * @param ResponseInterface|null $response
      *
      * @return static
      */
@@ -50,7 +51,7 @@ trait HistoryTrait
      *
      * @param int|null $index History index (null for all, -1 for last)
      *
-     * @return false|\Psr\Http\Message\MessageInterface[][]|\Psr\Http\Message\MessageInterface[]
+     * @return false|MessageInterface[][]|MessageInterface[]
      */
     public function getHistory(?int $index = null)
     {

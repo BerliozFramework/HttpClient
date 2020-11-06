@@ -16,6 +16,7 @@ namespace Berlioz\Http\Client\Exception;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 /**
  * Class HttpException.
@@ -24,21 +25,25 @@ use Psr\Http\Message\ResponseInterface;
  */
 class HttpException extends HttpClientException
 {
-    /** @var \Psr\Http\Message\RequestInterface */
+    /** @var RequestInterface */
     private $request;
-    /** @var null|\Psr\Http\Message\ResponseInterface */
+    /** @var null|ResponseInterface */
     private $response;
 
     /**
      * HttpException constructor.
      *
      * @param string $message
-     * @param \Psr\Http\Message\RequestInterface $request
-     * @param null|\Psr\Http\Message\ResponseInterface $response
-     * @param null|\Throwable $previous
+     * @param RequestInterface $request
+     * @param null|ResponseInterface $response
+     * @param null|Throwable $previous
      */
-    public function __construct(string $message, RequestInterface $request, ?ResponseInterface $response = null, ?\Throwable $previous = null)
-    {
+    public function __construct(
+        string $message,
+        RequestInterface $request,
+        ?ResponseInterface $response = null,
+        ?Throwable $previous = null
+    ) {
         $code = 0;
         if ($response) {
             $code = $response->getStatusCode();
@@ -52,7 +57,7 @@ class HttpException extends HttpClientException
     /**
      * Get request.
      *
-     * @return \Psr\Http\Message\RequestInterface
+     * @return RequestInterface
      */
     public function getRequest(): RequestInterface
     {
@@ -62,7 +67,7 @@ class HttpException extends HttpClientException
     /**
      * Get response.
      *
-     * @return \Psr\Http\Message\ResponseInterface|null
+     * @return ResponseInterface|null
      */
     public function getResponse(): ?ResponseInterface
     {
