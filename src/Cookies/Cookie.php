@@ -77,11 +77,20 @@ class Cookie
         $cookie->name = $cookieTmp['name'];
         $cookie->value = isset($cookieTmp['value']) ? str_replace(' ', '+', $cookieTmp['value']) : null;
         try {
-            if (isset($cookieTmp['max-age'])) {
+            if (array_key_exists('max-age', $cookieTmp)) {
+                $cookieTmp['max-age'] = intval($cookieTmp['max-age']);
+
                 $cookie->expires = new DateTime();
-                $cookie->expires->add(new DateInterval(sprintf('PT%dS', $cookieTmp['max-age'])));
+                $dateInterval = new DateInterval(sprintf('PT%dS', abs($cookieTmp['max-age'])));
+
+                if ($cookieTmp['max-age'] > 0) {
+                    $cookie->expires = $cookie->expires->add($dateInterval);
+                }
+                if ($cookieTmp['max-age'] < 0) {
+                    $cookie->expires = $cookie->expires->sub($dateInterval);
+                }
             }
-            if (isset($cookieTmp['expires'])) {
+            if (array_key_exists('expires', $cookieTmp)) {
                 $cookie->expires = new DateTime($cookieTmp['expires']);
             }
         } catch (Exception $exception) {
