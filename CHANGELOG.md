@@ -1,7 +1,15 @@
 # Change Log
-All notable changes to this project will be documented in this file.
-This project adheres to [Semantic Versioning] (http://semver.org/).
-For change log format, use [Keep a Changelog] (http://keepachangelog.com/).
+
+All notable changes to this project will be documented in this file. This project adheres
+to [Semantic Versioning] (http://semver.org/). For change log format,
+use [Keep a Changelog] (http://keepachangelog.com/).
+
+## [1.0.1] - 2021-01-28
+
+### Fixed
+
+- Fix cookie negative max-age
 
 ## [1.0.0] - 2020-11-06
+
 Initial version
