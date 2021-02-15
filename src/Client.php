@@ -31,14 +31,13 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerAwareInterface;
 use Serializable;
 
-use function mb_convert_case;
-
 // Constants
 defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
 
 class Client implements ClientInterface, LoggerAwareInterface, Serializable
 {
     use Components\DefaultHeadersTrait;
+    use Components\HeaderParserTrait;
     use Components\HistoryTrait;
     use Components\LogTrait;
     use Components\RequestFactoryTrait;
@@ -212,57 +211,6 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
     public function getCookies(): CookiesManager
     {
         return $this->cookies;
-    }
-
-    /**
-     * Parse headers.
-     *
-     * @param string $headers Raw headers
-     * @param mixed $reasonPhrase Reason phrase returned by reference
-     *
-     * @return array
-     */
-    protected function parseHeaders(string $headers, &$reasonPhrase = null): array
-    {
-        $finalHeaders = [];
-
-        // Explode raw headers
-        $headers = explode("\r\n", $headers);
-        // Get and remove first header line
-        $firstHeader = array_shift($headers);
-        // Explode headers
-        $headers = array_map(
-            function ($value) {
-                $value = explode(":", $value, 2);
-                $value = array_map('trim', $value);
-                $value = array_filter($value);
-
-                return $value;
-            },
-            $headers
-        );
-        $headers = array_filter($headers);
-
-        foreach ($headers as $header) {
-            $header[0] = mb_convert_case($header[0], MB_CASE_TITLE);
-            $header[1] = $header[1] ?? null;
-
-            if (!isset($finalHeaders[$header[0]])) {
-                $finalHeaders[$header[0]] = [$header[1]];
-                continue;
-            }
-
-            $finalHeaders[$header[0]][] = $header[1];
-        }
-
-        // Treat first header
-        $reasonPhrase = null;
-        $matches = [];
-        if (preg_match("#^HTTP/([0-9.]+) ([0-9]+) (.*)$#i", $firstHeader, $matches) === 1) {
-            $reasonPhrase = $matches[3];
-        }
-
-        return $finalHeaders;
     }
 
     /**

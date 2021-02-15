@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [1.0.2] - 2021-02-15
+
+### Changed
+
+- Separate headers' parser into an independent trait to be reused
+
 ## [1.0.1] - 2021-01-28
 
 ### Fixed
