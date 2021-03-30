@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [1.0.3] - 2021-03-30
+
+### Fixed
+
+- Empty header value are now ignored
+
 ## [1.0.2] - 2021-02-15
 
 ### Changed

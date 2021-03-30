@@ -56,6 +56,10 @@ trait HeaderParserTrait
             $header[0] = mb_convert_case($header[0], MB_CASE_TITLE);
             $header[1] = $header[1] ?? null;
 
+            if (null === $header[1]) {
+                continue;
+            }
+
             if (!isset($finalHeaders[$header[0]])) {
                 $finalHeaders[$header[0]] = [$header[1]];
                 continue;
