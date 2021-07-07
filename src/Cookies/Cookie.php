@@ -28,21 +28,21 @@ use Psr\Http\Message\UriInterface;
 class Cookie
 {
     /** @var string Name */
-    private $name;
+    protected $name;
     /** @var string|null Value */
-    private $value;
+    protected $value;
     /** @var DateTime|null Expires */
-    private $expires;
+    protected $expires;
     /** @var string|null Path */
-    private $path;
+    protected $path;
     /** @var string Domain */
-    private $domain;
+    protected $domain;
     /** @var string Version */
-    private $version;
+    protected $version;
     /** @var bool HTTP only? */
-    private $httpOnly;
+    protected $httpOnly;
     /** @var bool Secure? */
-    private $secure;
+    protected $secure;
 
     /**
      * Parse raw cookie.
