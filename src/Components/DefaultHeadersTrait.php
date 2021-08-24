@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -16,13 +16,11 @@ namespace Berlioz\Http\Client\Components;
 
 /**
  * Trait DefaultHeadersTrait.
- *
- * @package Berlioz\Http\Client\Components
  */
 trait DefaultHeadersTrait
 {
     /** @var array Default headers */
-    protected $defaultHeaders;
+    protected array $defaultHeaders = [];
 
     /**
      * Get default headers.
@@ -42,7 +40,7 @@ trait DefaultHeadersTrait
      *
      * @return static
      */
-    public function setDefaultHeaders(array $headers, bool $erase = true)
+    public function setDefaultHeaders(array $headers, bool $erase = true): static
     {
         if ($erase) {
             $this->defaultHeaders = $headers;
@@ -76,7 +74,7 @@ trait DefaultHeadersTrait
      *
      * @return static
      */
-    public function setDefaultHeader(string $name, string $value, bool $erase = true)
+    public function setDefaultHeader(string $name, string $value, bool $erase = true): static
     {
         if ($erase || !isset($this->defaultHeaders[$name])) {
             unset($this->defaultHeaders[$name]);

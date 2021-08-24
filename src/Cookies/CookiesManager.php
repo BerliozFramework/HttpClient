@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -24,13 +24,11 @@ use Psr\Http\Message\UriInterface;
 
 /**
  * Class CookiesManager.
- *
- * @package Berlioz\Http\Client\Cookies
  */
 class CookiesManager implements IteratorAggregate, Countable
 {
     /** @var Cookie[] CookiesManager */
-    protected $cookies = [];
+    protected array $cookies = [];
 
     /**
      * CookiesManager constructor.
@@ -43,7 +41,7 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * @inheritDoc
      */
-    public function getIterator()
+    public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->cookies);
     }
@@ -54,6 +52,20 @@ class CookiesManager implements IteratorAggregate, Countable
     public function count(): int
     {
         return count($this->cookies);
+    }
+
+    /**
+     * Get array copy of cookies.
+     *
+     * @param UriInterface|null $uri
+     *
+     * @return array
+     */
+    public function getArrayCopy(?UriInterface $uri = null): array
+    {
+        $cookies = $uri ? $this->getCookiesForUri($uri) : $this->cookies;
+
+        return array_map(fn(Cookie $cookie) => $cookie->getArrayCopy(), $cookies);
     }
 
     /**
@@ -102,9 +114,9 @@ class CookiesManager implements IteratorAggregate, Countable
      *
      * @param Cookie $cookie
      *
-     * @return CookiesManager
+     * @return static
      */
-    public function addCookie(Cookie $cookie): CookiesManager
+    public function addCookie(Cookie $cookie): static
     {
         foreach ($this->cookies as $aCookie) {
             if ($aCookie->isSame($cookie)) {
@@ -127,7 +139,7 @@ class CookiesManager implements IteratorAggregate, Countable
      * @return static
      * @throws HttpClientException
      */
-    public function addRawCookie(string $raw, ?UriInterface $uri = null): CookiesManager
+    public function addRawCookie(string $raw, ?UriInterface $uri = null): static
     {
         $this->addCookie(Cookie::parse($raw, $uri));
 
@@ -143,7 +155,7 @@ class CookiesManager implements IteratorAggregate, Countable
      * @return static
      * @throws HttpClientException
      */
-    public function addCookiesFromResponse(UriInterface $uri, ResponseInterface $response): CookiesManager
+    public function addCookiesFromResponse(UriInterface $uri, ResponseInterface $response): static
     {
         $cookies = $response->getHeader('Set-Cookie');
 
@@ -184,7 +196,7 @@ class CookiesManager implements IteratorAggregate, Countable
      *
      * @return static
      */
-    public function removeCookie(Cookie $cookie): CookiesManager
+    public function removeCookie(Cookie $cookie): static
     {
         while (false !== ($key = array_search($cookie, $this->cookies, true))) {
             unset($this->cookies[$key]);

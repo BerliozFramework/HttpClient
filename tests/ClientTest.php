@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -14,29 +14,17 @@ namespace Berlioz\Http\Client\Tests;
 
 use Berlioz\Http\Client\Client;
 use Berlioz\Http\Client\Exception\HttpException;
+use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Uri;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Symfony\Component\Process\Process;
+use ReflectionObject;
 
 class ClientTest extends TestCase
 {
-    /** @var \Symfony\Component\Process\Process */
-    private static $process;
-
-    public static function setUpBeforeClass(): void
-    {
-        self::$process = new Process(['php', '-S', 'localhost:8080', '-t', realpath(__DIR__ . '/server')]);
-        self::$process->start();
-        usleep(100000);
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-        self::$process->stop();
-    }
+    use PhpServerTrait;
 
     public function testGet()
     {
@@ -48,6 +36,27 @@ class ClientTest extends TestCase
 
         $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('GET', $bodyExploded[0]);
+    }
+
+    public function testGet_redirection()
+    {
+        $uri = new Uri('http', 'localhost', 8080, '/request.php?redirect=2');
+        $client = new Client();
+        $response = $client->get($uri);
+
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
+        $this->assertEquals('GET', $bodyExploded[0]);
+    }
+
+    public function testGet_tooManyRedirection()
+    {
+        $this->expectException(RequestException::class);
+
+        $uri = new Uri('http', 'localhost', 8080, '/request.php?redirect=10');
+        $client = new Client();
+        $client->get($uri);
     }
 
     public function testPost()
@@ -146,27 +155,27 @@ class ClientTest extends TestCase
         $uri = new Uri('http', 'localhost', 8080, '/404');
         $request = new Request('get', $uri);
         $client = new Client();
-        $response = $client->sendRequest($request);
+        $client->sendRequest($request);
     }
 
-    public function testHistory()
+    public function testSessionHistory()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');
         $client = new Client();
         $client->get($uri);
         $client->post($uri);
 
-        $history1 = $client->getHistory(0);
-        $history2 = $client->getHistory(1);
+        $history1 = $client->getSession()->getHistory()->get(0);
+        $history2 = $client->getSession()->getHistory()->get(1);
 
-        $this->assertCount(2, $client->getHistory());
-        $this->assertInstanceOf(RequestInterface::class, $history1['request']);
-        $this->assertInstanceOf(ResponseInterface::class, $history1['response']);
-        $this->assertEquals('GET', $history1['request']->getMethod());
-        $this->assertEquals('POST', $history2['request']->getMethod());
+        $this->assertCount(2, $client->getSession()->getHistory());
+        $this->assertInstanceOf(RequestInterface::class, $history1->getRequest());
+        $this->assertInstanceOf(ResponseInterface::class, $history1->getResponse());
+        $this->assertEquals('GET', $history1->getRequest()->getMethod());
+        $this->assertEquals('POST', $history2->getRequest()->getMethod());
 
-        $client->clearHistory();
-        $this->assertCount(0, $client->getHistory());
+        $client->getSession()->getHistory()->clear();
+        $this->assertCount(0, $client->getSession()->getHistory());
     }
 
     public function testSetDefaultHeaders()
@@ -191,7 +200,7 @@ class ClientTest extends TestCase
     {
         $client = new Client();
 
-        $class = new \ReflectionObject($client);
+        $class = new ReflectionObject($client);
         $property = $class->getProperty('defaultHeaders');
         $property->setAccessible(true);
         $defaultHeaders = $property->getValue($client);
@@ -218,9 +227,8 @@ class ClientTest extends TestCase
         // Test request headers
         $uri = new Uri('http', 'localhost', 8080, '/request.php');
         $client->get($uri);
-        $history = $client->getHistory(0);
-        /** @var \Psr\Http\Message\RequestInterface $request */
-        $request = $history['request'];
+        $history = $client->getSession()->getHistory()->get(0);
+        $request = $history->getRequest();
 
         $this->assertEquals(array_merge($defaultHeaders, ['Header1' => ['Value2', 'Value1']]), $request->getHeaders());
     }
@@ -228,7 +236,7 @@ class ClientTest extends TestCase
     public function testRequest()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');
-        $client = new Client;
+        $client = new Client();
         $response = $client->request('get', $uri);
 
         $this->assertEquals(200, $response->getStatusCode());
@@ -237,34 +245,49 @@ class ClientTest extends TestCase
         $this->assertEquals('GET', $bodyExploded[0]);
     }
 
-    public function testCurlOptions()
+    public function testRequestWithDefaultBaseUri()
     {
-        $options = [CURL_HTTP_VERSION_1_0, CURLOPT_IPRESOLVE];
-        $client = new Client();
+        $uri = Uri::createFromString('/request.php');
+        $client = new Client(['baseUri' => 'http://localhost:8080']);
+        $response = $client->request('get', $uri);
 
-        $client->setCurlOptions($options);
-        $this->assertEquals($options, $client->getCurlOptions());
+        $this->assertEquals(200, $response->getStatusCode());
 
-        $client->setCurlOptions([CURLOPT_IPRESOLVE], true);
-        $this->assertEquals([CURLOPT_IPRESOLVE], $client->getCurlOptions());
-
-        $client->setCurlOptions(array_merge($options, [CURLINFO_HEADER_OUT]));
-        $this->assertEquals($options, $client->getCurlOptions());
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
+        $this->assertEquals('GET', $bodyExploded[0]);
     }
 
-    public function testGetCookies()
+//    public function testCurlOptions()
+//    {
+//        $options = [CURL_HTTP_VERSION_1_0, CURLOPT_IPRESOLVE];
+//        $client = new Client();
+//
+//        $client->setCurlOptions($options);
+//        $this->assertEquals($options, $client->getCurlOptions());
+//
+//        $client->setCurlOptions([CURLOPT_IPRESOLVE], true);
+//        $this->assertEquals([CURLOPT_IPRESOLVE], $client->getCurlOptions());
+//
+//        $client->setCurlOptions(array_merge($options, [CURLINFO_HEADER_OUT]));
+//        $this->assertEquals($options, $client->getCurlOptions());
+//    }
+
+    public function testSessionCookies()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');
-        $client = new Client;
+        $client = new Client();
         $client->request('get', $uri);
 
-        $this->assertEquals('test=value', implode('; ', $client->getCookies()->getCookiesForUri($uri)));
+        $this->assertEquals(
+            'test=value',
+            implode('; ', $client->getSession()->getCookies()->getCookiesForUri($uri))
+        );
     }
 
     public function testSerialization()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');
-        $client = new Client;
+        $client = new Client();
         $client->request('get', $uri);
         $client->request('get', $uri);
 
@@ -272,12 +295,12 @@ class ClientTest extends TestCase
         $clientUnserialized = unserialize($clientSerialized);
 
         $this->assertEquals(
-            $client->getHistory(0)['response']->getBody()->getContents(),
-            $clientUnserialized->getHistory(0)['response']->getBody()->getContents()
+            $client->getSession()->getHistory()->get(0)->getResponse()->getBody()->getContents(),
+            $clientUnserialized->getSession()->getHistory()->get(0)->getResponse()->getBody()->getContents()
         );
         $this->assertEquals(
-            $client->getHistory(1)['response']->getBody()->getContents(),
-            $clientUnserialized->getHistory(1)['response']->getBody()->getContents()
+            $client->getSession()->getHistory()->get(1)->getResponse()->getBody()->getContents(),
+            $clientUnserialized->getSession()->getHistory()->get(1)->getResponse()->getBody()->getContents()
         );
     }
 }

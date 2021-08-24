@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -20,8 +20,6 @@ use Psr\Http\Message\ResponseInterface;
 
 /**
  * Trait LogFormatterTrait.
- *
- * @package Berlioz\Http\Client\Components
  */
 trait LogFormatterTrait
 {
@@ -39,9 +37,8 @@ trait LogFormatterTrait
             sprintf(
                 '%s %s HTTP/%s' . PHP_EOL,
                 $request->getMethod(),
-                $request->getUri()->getPath() . (!empty(
-                $request->getUri()->getQuery()
-                ) ? '?' . $request->getUri()->getQuery() : ''),
+                $request->getUri()->getPath() .
+                (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
                 $request->getProtocolVersion()
             );
 
@@ -105,9 +102,7 @@ trait LogFormatterTrait
         }
 
         // Body
-        $str .=
-            PHP_EOL .
-            ($message->getBody()->getSize() > 0 ? $message->getBody() : 'Empty body');
+        $str .= PHP_EOL . ($message->getBody()->getSize() > 0 ? $message->getBody() : 'Empty body');
 
         return $str;
     }

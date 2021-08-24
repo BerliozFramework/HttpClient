@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -25,8 +25,6 @@ use Psr\Http\Message\UriInterface;
 
 /**
  * Trait RequestFactoryTrait.
- *
- * @package Berlioz\Http\Client\Components
  */
 trait RequestFactoryTrait
 {
@@ -34,19 +32,20 @@ trait RequestFactoryTrait
      * Sends a PSR-7 request and returns a PSR-7 response.
      *
      * @param RequestInterface $request
+     * @param array $options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens while processing the request.
      */
-    abstract public function sendRequest(RequestInterface $request): ResponseInterface;
+    abstract public function sendRequest(RequestInterface $request, array $options = []): ResponseInterface;
 
     /**
      * Construct request.
      *
      * @param string $method Http method
-     * @param string|UriInterface $uri Uri
+     * @param UriInterface|string $uri Uri
      * @param array|null $parameters Get parameters
-     * @param string|StreamInterface|null $body Body
+     * @param StreamInterface|string|null $body Body
      * @param array $options Options
      *
      * @option array "headers" Headers of request
@@ -55,9 +54,9 @@ trait RequestFactoryTrait
      */
     public function constructRequest(
         string $method,
-        $uri,
+        UriInterface|string $uri,
         ?array $parameters = null,
-        $body = null,
+        StreamInterface|string|null $body = null,
         array $options = []
     ): RequestInterface {
         // URI
@@ -97,9 +96,9 @@ trait RequestFactoryTrait
      * Request.
      *
      * @param string $method Http method
-     * @param string|UriInterface $uri Uri
+     * @param UriInterface|string $uri Uri
      * @param array|null $parameters Get parameters
-     * @param string|StreamInterface|null $body Body
+     * @param StreamInterface|string|null $body Body
      * @param array $options Options
      *
      * @option array "headers" Headers of request
@@ -109,148 +108,175 @@ trait RequestFactoryTrait
      */
     public function request(
         string $method,
-        $uri,
+        UriInterface|string $uri,
         array $parameters = null,
-        $body = null,
+        StreamInterface|string|null $body = null,
         array $options = []
     ): ResponseInterface {
         $request = $this->constructRequest($method, $uri, $parameters, $body, $options);
 
-        return $this->sendRequest($request);
+        return $this->sendRequest($request, $options);
     }
 
     /**
      * Get request.
      *
-     * @param string|UriInterface $uri Uri of request
+     * @param UriInterface|string $uri Uri of request
      * @param array|null $parameters Get parameters
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function get($uri, array $parameters = null, array $options = []): ResponseInterface
-    {
+    public function get(
+        UriInterface|string $uri,
+        array $parameters = null,
+        array $options = []
+    ): ResponseInterface {
         return $this->request('GET', $uri, $parameters, null, $options);
     }
 
     /**
      * Post request.
      *
-     * @param string|UriInterface $uri Uri of request
-     * @param string|StreamInterface|null $body Body of request
+     * @param UriInterface|string $uri Uri of request
+     * @param StreamInterface|string|null $body Body of request
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function post($uri, $body = null, array $options = []): ResponseInterface
-    {
+    public function post(
+        UriInterface|string $uri,
+        StreamInterface|string|null $body = null,
+        array $options = []
+    ): ResponseInterface {
         return $this->request('POST', $uri, null, $body, $options);
     }
 
     /**
      * Patch request.
      *
-     * @param string|UriInterface $uri Uri of request
-     * @param string|StreamInterface|null $body Body of request
+     * @param UriInterface|string $uri Uri of request
+     * @param StreamInterface|string|null $body Body of request
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function patch($uri, $body = null, array $options = []): ResponseInterface
-    {
+    public function patch(
+        UriInterface|string $uri,
+        StreamInterface|string|null $body = null,
+        array $options = []
+    ): ResponseInterface {
         return $this->request('PATCH', $uri, null, $body, $options);
     }
 
     /**
      * Put request.
      *
-     * @param string|UriInterface $uri Uri of request
-     * @param string|StreamInterface|null $body Body of request
+     * @param UriInterface|string $uri Uri of request
+     * @param StreamInterface|string|null $body Body of request
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function put($uri, $body = null, array $options = []): ResponseInterface
-    {
+    public function put(
+        UriInterface|string $uri,
+        StreamInterface|string|null $body = null,
+        array $options = []
+    ): ResponseInterface {
         return $this->request('PUT', $uri, null, $body, $options);
     }
 
     /**
      * Delete request.
      *
-     * @param string|UriInterface $uri Uri of request
+     * @param UriInterface|string $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function delete($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
+    public function delete(
+        UriInterface|string $uri,
+        array $parameters = [],
+        array $options = []
+    ): ResponseInterface {
         return $this->request('DELETE', $uri, $parameters, null, $options);
     }
 
     /**
      * Options request.
      *
-     * @param string|UriInterface $uri Uri of request
+     * @param UriInterface|string $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function options($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
+    public function options(
+        UriInterface|string $uri,
+        array $parameters = [],
+        array $options = []
+    ): ResponseInterface {
         return $this->request('OPTIONS', $uri, $parameters, null, $options);
     }
 
     /**
      * Head request.
      *
-     * @param string|UriInterface $uri Uri of request
+     * @param UriInterface|string $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function head($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
+    public function head(
+        UriInterface|string $uri,
+        array $parameters = [],
+        array $options = []
+    ): ResponseInterface {
         return $this->request('HEAD', $uri, $parameters, null, $options);
     }
 
     /**
      * Connect request.
      *
-     * @param string|UriInterface $uri Uri of request
-     * @param string|StreamInterface $body Body of request
+     * @param UriInterface|string $uri Uri of request
+     * @param StreamInterface|string|null $body Body of request
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function connect($uri, $body, array $options = []): ResponseInterface
-    {
+    public function connect(
+        UriInterface|string $uri,
+        StreamInterface|string|null $body,
+        array $options = []
+    ): ResponseInterface {
         return $this->request('CONNECT', $uri, null, $body, $options);
     }
 
     /**
      * Trace request.
      *
-     * @param string|UriInterface $uri Uri of request
+     * @param UriInterface|string $uri Uri of request
      * @param array $parameters Get parameters
      * @param array $options Options
      *
      * @return ResponseInterface
      * @throws ClientExceptionInterface If an error happens during processing the request.
      */
-    public function trace($uri, array $parameters = [], array $options = []): ResponseInterface
-    {
+    public function trace(
+        UriInterface|string $uri,
+        array $parameters = [],
+        array $options = []
+    ): ResponseInterface {
         return $this->request('TRACE', $uri, $parameters, null, $options);
     }
 }

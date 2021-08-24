@@ -1,7 +1,8 @@
 {
   "name": "berlioz/http-client",
   "description": "Berlioz HTTP Client is a PHP library to request HTTP server with continuous navigation, including cookies, sessions...",
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "license": "MIT",
   "homepage": "https://getberlioz.com",
   "authors": [
@@ -20,20 +21,27 @@
       "Berlioz\\Http\\Client\\Tests\\": "tests/"
     }
   },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../../ElGigi/HarParser"
+    }
+  ],
   "require": {
-    "php": "^7.1 || ^8.0",
-    "ext-curl": "*",
+    "php": "^8.0",
     "ext-mbstring": "*",
     "ext-zlib": "*",
-    "berlioz/http-message": "^1.0",
+    "berlioz/http-message": "2.x-dev",
+    "elgigi/har-parser": "@dev",
     "psr/http-client": "^1.0",
     "psr/log": "^1.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "^7.5 || ^8.0 || ^9.0",
-    "symfony/process": "^4.1"
+    "phpunit/phpunit": "^9.5",
+    "symfony/process": "^5.0"
   },
   "suggest": {
+    "ext-curl": "To use CURL adapter",
     "berlioz/html-selector": "To query HTML result like jQuery in JavaScript."
   },
   "provide": {

@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -14,35 +14,30 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Cookies;
 
+use Berlioz\Http\Client\Components\CookieParserTrait;
 use Berlioz\Http\Client\Exception\HttpClientException;
-use DateInterval;
 use DateTime;
+use DateTimeInterface;
+use ElGigi\HarParser\Entities\Cookie as HarCookie;
 use Exception;
 use Psr\Http\Message\UriInterface;
 
 /**
  * Class Cookie.
- *
- * @package Berlioz\Http\Client\Cookies
  */
 class Cookie
 {
-    /** @var string Name */
-    private $name;
-    /** @var string|null Value */
-    private $value;
-    /** @var DateTime|null Expires */
-    private $expires;
-    /** @var string|null Path */
-    private $path;
-    /** @var string Domain */
-    private $domain;
-    /** @var string Version */
-    private $version;
-    /** @var bool HTTP only? */
-    private $httpOnly;
-    /** @var bool Secure? */
-    private $secure;
+    use CookieParserTrait;
+
+    protected string $name;
+    protected ?string $value;
+    protected ?DateTimeInterface $expires = null;
+    protected ?string $path = null;
+    protected ?string $domain = null;
+    protected ?string $version = null;
+    protected bool $httpOnly = false;
+    protected bool $secure = false;
+    protected ?string $sameSite = null;
 
     /**
      * Parse raw cookie.
@@ -55,64 +50,74 @@ class Cookie
      */
     public static function parse(string $raw, ?UriInterface $uri = null): Cookie
     {
-        $cookie = new Cookie();
-
-        // Parse
-        $cookieTmp = explode(";", $raw);
-        array_walk(
-            $cookieTmp,
-            function (&$value) {
-                $value = explode('=', $value, 2);
-                $value = array_map('trim', $value);
-                $value[1] = $value[1] ?? null;
-            }
-        );
-        $cookieTmp[] = ['name', $cookieTmp[0][0]];
-        $cookieTmp[] = ['value', $cookieTmp[0][1]];
-        unset($cookieTmp[0]);
-        $cookieTmp = array_column($cookieTmp, 1, 0);
-        $cookieTmp = array_change_key_case($cookieTmp, CASE_LOWER);
-
-        // Make cookie
-        $cookie->name = $cookieTmp['name'];
-        $cookie->value = isset($cookieTmp['value']) ? str_replace(' ', '+', $cookieTmp['value']) : null;
         try {
-            if (array_key_exists('max-age', $cookieTmp)) {
-                $cookieTmp['max-age'] = intval($cookieTmp['max-age']);
-
-                $cookie->expires = new DateTime();
-                $dateInterval = new DateInterval(sprintf('PT%dS', abs($cookieTmp['max-age'])));
-
-                if ($cookieTmp['max-age'] > 0) {
-                    $cookie->expires = $cookie->expires->add($dateInterval);
-                }
-                if ($cookieTmp['max-age'] < 0) {
-                    $cookie->expires = $cookie->expires->sub($dateInterval);
-                }
+            $cookie = new Cookie();
+            $cookieParsed = $cookie->parseCookie($raw);
+            $cookie->name = $cookieParsed['name'];
+            $cookie->value = $cookieParsed['value'];
+            $cookie->expires = $cookieParsed['expires'];
+            $cookie->path = $cookieParsed['path'] ?? null;
+            $cookie->domain = $cookieParsed['domain'] ?? ($uri ? $uri->getHost() : null);
+            if (null === $cookie->domain) {
+                throw new HttpClientException(sprintf('Missing domain for cookie "%s"', $cookie->name));
             }
-            if (array_key_exists('expires', $cookieTmp)) {
-                $cookie->expires = new DateTime($cookieTmp['expires']);
-            }
+            $cookie->domain = str_starts_with($cookie->domain, '.') ? $cookie->domain : '.' . $cookie->domain;
+            $cookie->version = $cookieParsed['version'] ?? null;
+            $cookie->httpOnly = $cookieParsed['httponly'];
+            $cookie->secure = $cookieParsed['secure'];
+            $cookie->sameSite = $cookieParsed['samesite'];
+        } catch (HttpClientException $exception) {
+            throw $exception;
         } catch (Exception $exception) {
-            throw new HttpClientException(
-                sprintf(
-                    'Unable to parse expiration date "%s" of cookie "%s"',
-                    $cookieTmp['max-age'] ?? $cookieTmp['expires'],
-                    $cookie->name
-                )
-            );
+            throw new HttpClientException('Unable to parse cookie', previous: $exception);
         }
-        $cookie->path = $cookieTmp['path'] ?? null;
-        $cookie->domain = $cookieTmp['domain'] ?? ($uri ? $uri->getHost() : null);
-        if (null === $cookie->domain) {
-            throw new HttpClientException(sprintf('Missing domain for cookie "%s"', $cookie->name));
-        }
-        $cookie->domain = substr($cookie->domain, 0, 1) == '.' ? $cookie->domain : '.' . $cookie->domain;
-        $cookie->version = $cookieTmp['version'] ?? null;
-        $cookie->httpOnly = array_key_exists('httponly', $cookieTmp);
-        $cookie->secure = array_key_exists('secure', $cookieTmp);
 
         return $cookie;
+    }
+
+    /**
+     * Create cookie from HAR cookie.
+     *
+     * @param HarCookie $harCookie
+     *
+     * @return static
+     */
+    public static function createFromHar(HarCookie $harCookie): static
+    {
+        $cookie = new Cookie();
+        $cookie->name = $harCookie->getName();
+        $cookie->value = $harCookie->getValue();
+        $cookie->expires = $harCookie->getExpires();
+        $cookie->path = $harCookie->getPath();
+        $cookie->domain = $harCookie->getDomain();
+        $cookie->httpOnly = $harCookie->isHttpOnly() ?? false;
+        $cookie->secure = $harCookie->isSecure() ?? false;
+        $cookie->sameSite = $harCookie->getSameSite();
+
+        return $cookie;
+    }
+
+    /**
+     * Get array copy of cookie.
+     *
+     * @return array
+     */
+    public function getArrayCopy(): array
+    {
+        return array_filter(
+            [
+                'name' => $this->name,
+                'value' => $this->value,
+                'expires' => $this->expires,
+                'path' => $this->path,
+                'domain' => $this->domain,
+                'version' => $this->version,
+                'httpOnly' => $this->httpOnly,
+                'secure' => $this->secure,
+                'sameSite' => $this->sameSite,
+            ],
+            fn($value) => null !== $value
+        );
     }
 
     /**
@@ -146,9 +151,9 @@ class Cookie
     /**
      * Get expiration.
      *
-     * @return DateTime|null
+     * @return DateTimeInterface|null
      */
-    public function getExpires(): ?DateTime
+    public function getExpires(): ?DateTimeInterface
     {
         return $this->expires;
     }
@@ -169,7 +174,7 @@ class Cookie
         if (null === $now) {
             try {
                 $now = new DateTime();
-            } catch (Exception $e) {
+            } catch (Exception) {
                 return false;
             }
         }
@@ -225,6 +230,16 @@ class Cookie
     public function isSecure(): bool
     {
         return $this->secure;
+    }
+
+    /**
+     * Get same site.
+     *
+     * @return string|null
+     */
+    public function getSameSite(): ?string
+    {
+        return $this->sameSite;
     }
 
     /**

@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -21,8 +21,6 @@ use Psr\Log\LoggerAwareTrait;
 
 /**
  * Trait LogTrait.
- *
- * @package Berlioz\Http\Client\Components
  */
 trait LogTrait
 {
@@ -40,7 +38,7 @@ trait LogTrait
      *
      * @throws HttpClientException if unable to write logs
      */
-    protected function log(RequestInterface $request, ResponseInterface $response = null)
+    protected function log(RequestInterface $request, ResponseInterface $response = null): void
     {
         // Logger
         if (!empty($this->logger)) {
@@ -56,13 +54,7 @@ trait LogTrait
                     __METHOD__,
                     $request->getMethod(),
                     $request->getUri(),
-                    $response ?
-                        sprintf(
-                            '%d (%s)',
-                            $response->getStatusCode(),
-                            $response->getReasonPhrase()
-                        ) :
-                        'NONE'
+                    $response ? sprintf('%d (%s)', $response->getStatusCode(), $response->getReasonPhrase()) : 'NONE'
                 )
             );
         }
@@ -89,13 +81,12 @@ trait LogTrait
     /**
      * Close log resource.
      *
-     * @return static
      * @throws HttpClientException
      */
-    public function closeLogResource()
+    protected function closeLogResource(): void
     {
         if (!is_resource($this->logFp)) {
-            return $this;
+            return;
         }
 
         // Close resource
@@ -104,7 +95,5 @@ trait LogTrait
         }
 
         $this->logFp = null;
-
-        return $this;
     }
 }

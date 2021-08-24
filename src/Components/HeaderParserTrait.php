@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is part of Berlioz framework.
  *
  * @license   https://opensource.org/licenses/MIT MIT License
- * @copyright 2017 Ronan GIRON
+ * @copyright 2021 Ronan GIRON
  * @author    Ronan GIRON <https://github.com/ElGigi>
  *
  * For the full copyright and license information, please view the LICENSE
@@ -18,8 +18,6 @@ use function mb_convert_case;
 
 /**
  * Trait HeaderParserTrait.
- *
- * @package Berlioz\Http\Client\Components
  */
 trait HeaderParserTrait
 {
@@ -27,12 +25,18 @@ trait HeaderParserTrait
      * Parse headers.
      *
      * @param string $headers Raw headers
-     * @param mixed $reasonPhrase Reason phrase returned by reference
+     * @param mixed|null $protocolVersion
+     * @param mixed|null $statusCode
+     * @param mixed|null $reasonPhrase Reason phrase returned by reference
      *
      * @return array
      */
-    protected function parseHeaders(string $headers, &$reasonPhrase = null): array
-    {
+    protected function parseHeaders(
+        string $headers,
+        mixed &$protocolVersion = null,
+        mixed &$statusCode = null,
+        mixed &$reasonPhrase = null
+    ): array {
         $finalHeaders = [];
 
         // Explode raw headers
@@ -44,9 +48,8 @@ trait HeaderParserTrait
             function ($value) {
                 $value = explode(":", $value, 2);
                 $value = array_map('trim', $value);
-                $value = array_filter($value);
 
-                return $value;
+                return array_filter($value);
             },
             $headers
         );
@@ -55,6 +58,10 @@ trait HeaderParserTrait
         foreach ($headers as $header) {
             $header[0] = mb_convert_case($header[0], MB_CASE_TITLE);
             $header[1] = $header[1] ?? null;
+
+            if (null === $header[1]) {
+                continue;
+            }
 
             if (!isset($finalHeaders[$header[0]])) {
                 $finalHeaders[$header[0]] = [$header[1]];
@@ -65,9 +72,13 @@ trait HeaderParserTrait
         }
 
         // Treat first header
+        $protocolVersion = null;
+        $statusCode = null;
         $reasonPhrase = null;
         $matches = [];
         if (preg_match("#^HTTP/([0-9.]+) ([0-9]+) (.*)$#i", $firstHeader, $matches) === 1) {
+            $protocolVersion = $matches[1];
+            $statusCode = (int)$matches[2];
             $reasonPhrase = $matches[3];
         }
 
