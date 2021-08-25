@@ -44,7 +44,7 @@ class CurlAdapter extends AbstractAdapter
      */
     public function __construct(protected array $options = [])
     {
-        if (!function_exists('curl_version')) {
+        if (!extension_loaded('curl')) {
             throw new HttpClientException('CURL module required for HTTP Client');
         }
 
