@@ -284,11 +284,14 @@ class Client implements ClientInterface, LoggerAwareInterface
             $redirectUri = Uri::createFromString($newLocation[0]);
 
             if (empty($redirectUri->getHost())) {
-                $url = parse_url((string)$request->getUri());
-                $redirectUri = $redirectUri->withHost($url['host']);
+                $redirectUri =
+                    $redirectUri
+                        ->withScheme($request->getUri()->getScheme())
+                        ->withHost($request->getUri()->getHost())
+                        ->withPort($request->getUri()->getPort());
 
-                if (!empty($url['scheme'])) {
-                    $redirectUri = $redirectUri->withScheme($url['scheme']);
+                if (!empty($userInfo = $request->getUri()->getUserInfo())) {
+                    $redirectUri = $redirectUri->withUserInfo(...explode(':', $userInfo, 2));
                 }
             }
 
