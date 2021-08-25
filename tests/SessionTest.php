@@ -60,19 +60,37 @@ class SessionTest extends TestCase
             new CookiesManager(),
             new Request('GET', 'https://getberlioz.com'),
             new Response('HOME', headers: ['Content-Type' => 'text/html']),
-            new Timings(new DateTimeImmutable('2021-07-22 22:30:00'), send: 2, wait: .5, receive: 10, total: 12.5),
+            new Timings(
+                dateTime: new DateTimeImmutable('2021-07-22T22:30:00.000+02:00'),
+                send:     2,
+                wait:     .5,
+                receive:  10,
+                total:    12.5
+            ),
         );
         $session->getHistory()->add(
             new CookiesManager(),
             new Request('GET', 'https://getberlioz.com/docs/'),
             new Response(null, statusCode: 301, headers: ['Location' => ['/docs/current/']]),
-            new Timings(new DateTimeImmutable('2021-07-22 22:30:00'), send: 1.2, wait: .5, receive: 10, total: 11.7),
+            new Timings(
+                dateTime: new DateTimeImmutable('2021-07-22T22:30:00.000+02:00'),
+                send:     1.2,
+                wait:     .5,
+                receive:  10,
+                total:    11.7
+            ),
         );
         $session->getHistory()->add(
             new CookiesManager(),
             new Request('GET', 'https://getberlioz.com/docs/current/'),
             new Response('DOCUMENTATION', headers: ['Content-Type' => 'text/html']),
-            new Timings(new DateTimeImmutable('2021-07-22 22:30:00'), send: 2, wait: .7, receive: 9, total: 11.7),
+            new Timings(
+                dateTime: new DateTimeImmutable('2021-07-22T22:30:00.000+02:00'),
+                send:     2,
+                wait:     .7,
+                receive:  9,
+                total:    11.7
+            ),
         );
 
         $this->assertEquals(
