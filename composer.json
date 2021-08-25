@@ -21,12 +21,6 @@
       "Berlioz\\Http\\Client\\Tests\\": "tests/"
     }
   },
-  "repositories": [
-    {
-      "type": "path",
-      "url": "../../ElGigi/HarParser"
-    }
-  ],
   "require": {
     "php": "^8.0",
     "ext-mbstring": "*",
