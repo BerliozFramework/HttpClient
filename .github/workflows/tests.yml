@@ -6,7 +6,7 @@ on:
 
 jobs:
     phpunit:
-        name: PHPUnit on ${{ matrix.php }} ${{ matrix.composer-flags }}
+        name: PHPUnit on ${{ matrix.php-versions }} ${{ matrix.composer-flags }}
         runs-on: ubuntu-latest
         continue-on-error: ${{ !matrix.stable }}
         strategy:
