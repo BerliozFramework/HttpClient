@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.0.0-beta1] - In progress
+
+### Added
+
+- Adapters
+- Option `cookies` for requests, to ignore cookies or force a specified manager
+- HAR file
+
+### Changed
+
+- Refactoring
+
 ## [1.0.2] - 2021-02-15
 
 ### Changed

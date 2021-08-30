@@ -1,7 +1,7 @@
 {
   "name": "berlioz/http-client",
   "description": "Berlioz HTTP Client is a PHP library to request HTTP server with continuous navigation, including cookies, sessions...",
-  "minimum-stability": "dev",
+  "minimum-stability": "beta",
   "prefer-stable": true,
   "license": "MIT",
   "homepage": "https://getberlioz.com",
@@ -25,8 +25,8 @@
     "php": "^8.0",
     "ext-mbstring": "*",
     "ext-zlib": "*",
-    "berlioz/http-message": "2.x-dev",
-    "elgigi/har-parser": "@dev",
+    "berlioz/http-message": "^2.0",
+    "elgigi/har-parser": "^1.0",
     "psr/http-client": "^1.0",
     "psr/log": "^1.0"
   },

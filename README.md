@@ -6,8 +6,8 @@
 [![Quality Grade](https://img.shields.io/codacy/grade/3e9df26a706d4ac285e1a49176665751/2.x.svg?style=flat-square)](https://app.codacy.com/gh/BerliozFramework/HttpClient)
 [![Total Downloads](https://img.shields.io/packagist/dt/berlioz/http-client.svg?style=flat-square)](https://packagist.org/packages/berlioz/http-client)
 
-**Berlioz HTTP Client** is a PHP library to request HTTP server with continuous navigation, including cookies, sessions...
-Implements PSR-18 (HTTP Client), PSR-7 (HTTP message interfaces) and PSR-17 (HTTP Factories) standards.
+**Berlioz HTTP Client** is a PHP library to request HTTP server with continuous navigation, including cookies,
+sessions... Implements PSR-18 (HTTP Client), PSR-7 (HTTP message interfaces) and PSR-17 (HTTP Factories) standards.
 
 ## Installation
 
@@ -23,13 +23,14 @@ $ composer require berlioz/http-client
 
 - **PHP** ^8.0
 - PHP libraries:
-  - **curl**
-  - **mbstring**
-  - **zlib**
+    - **curl**
+    - **mbstring**
+    - **zlib**
 - Packages:
-  - **berlioz/http-message**
-  - **psr/http-client**
-  - **psr/log**
+    - **berlioz/http-message**
+    - **elgigi/har-parser**
+    - **psr/http-client**
+    - **psr/log**
 
 ## Usage
 
@@ -88,25 +89,73 @@ $response = $client->request('get', 'https://getberlioz.com');
 print $response->getBody();
 ```
 
-### History
+### Session
 
-The browsing history is saved in `Client` object.
-If you serialize the object `Client`, the history is preserve.
+The session is accessible with method `Client::getSession()`.
 
-Without argument, the method `Client::getHistory()` returns an array of complete history:
+#### History
+
+The browsing history is saved in the session. If you serialize the object `Session`, the history is preserve.
+
+The method `Session::getHistory()` returns an `History` object:
 
 ```php
 use Berlioz\Http\Client\Client;
 
 $client = new Client();
-$history = $client->getHistory();
+$history = $client->getSession()->getHistory();
 ```
 
-With argument, the method return a specific request in history.
+#### Cookies
 
-### Cookies
+A cookie manager is available to manage cookies of session and between requests. The manager is available
+with `Session::getCookies()` method.
 
-A cookie manager is available to manage cookies of session and between requests.
-The manager is available with `Client::getCookies()` method.
+If you serialize the object `Session`, the cookies are preserves.
 
-If you serialize the object `Client`, the cookies are preserves.
+#### HAR file
+
+HAR file of session is accessible with method `Session::getHar()`.
+
+If you serialize the object `Session`, the HAR is preserve.
+
+Refers to the documentation of **elgigi/har-parser** library: https://github.com/ElGigi/HarParser
+
+### Adapters
+
+#### Usage
+
+Default adapter used by library is `CurlAdapter` (if CURL extension is installed), else the `StreamAdapter` is used.
+
+You can specify adapters to the client constructor, with argument `adapter`:
+
+```php
+use Berlioz\Http\Client\Client;
+use Berlioz\Http\Client\Adapter;
+
+$client = new Client(adapter: new Adapter\CurlAdapter(), adapter: new Adapter\StreamAdapter());
+```
+
+The first specified adapter is the default adapter.
+
+If you want force an adapter for a request, you can pass is name in the request options:
+
+```php
+use Berlioz\Http\Client\Client;
+use Berlioz\Http\Client\Adapter;
+
+$client = new Client(adapter: new Adapter\CurlAdapter(), adapter: new Adapter\StreamAdapter());
+$client->get('https://getberlioz.com', options: ['adapter' => 'stream'])
+```
+
+#### List
+
+List of adapters:
+
+- **curl**: `Berlioz\Http\Client\Adapter\CurlAdapter`
+- **stream**: `Berlioz\Http\Client\Adapter\StreamAdapter`
+
+#### Create an adapter
+
+You can create an adapter for your project.
+You must implement the interface `Berlioz\Http\Client\Adapter\AdapterInterface`.
