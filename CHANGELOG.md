@@ -4,7 +4,24 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
-## [2.0.0-beta1] - In progress
+## [2.0.0-beta2] - In progress
+
+### Added
+
+- New method `HarParser::addEntryToSession(Session $session, Entry $entry): void`
+- New method `HarParser::getTimings(Entry $entry): Timings`
+
+### Changed
+
+- Visibility of method `HarParser::getHttpRequest(Request $request): RequestInterface` to public
+- Visibility of method `HarParser::getHttpResponse(Response $response): ResponseInterface` to public
+
+### Fixed
+
+- Default "sleepTime" option to 0
+- Conversion of "sleepTime" in ms to microseconds
+
+## [2.0.0-beta1] - 2021-08-30
 
 ### Added
 

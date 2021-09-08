@@ -66,7 +66,7 @@ class Client implements ClientInterface, LoggerAwareInterface
             [
                 'baseUri' => null,
                 'followLocationLimit' => 5,
-                'sleepTime' => 5,
+                'sleepTime' => 0,
                 'logFile' => null,
                 'exceptions' => true,
                 'headers' => [
@@ -332,7 +332,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         }
 
         // No sleep time
-        if (($sleepMicroTime = $this->options['sleepTime'] / 1000) <= 0) {
+        if (($sleepMicroTime = $this->options['sleepTime'] * 1000) <= 0) {
             return;
         }
 

@@ -48,33 +48,42 @@ class HarParser
 
         /** @var Entry $entry */
         foreach ($har->getEntries() as $entry) {
-            $request = $this->getHttpRequest($entry->getRequest());
-            $response = $this->getHttpResponse($entry->getResponse());
-            $timings = new Timings(
-                dateTime: $entry->getStartedDateTime(),
-                send:     $entry->getTimings()->getSend(),
-                wait:     $entry->getTimings()->getWait(),
-                receive:  $entry->getTimings()->getReceive(),
-                total:    $entry->getTime(),
-                blocked:  $entry->getTimings()->getBlocked(),
-                dns:      $entry->getTimings()->getDns(),
-                connect:  $entry->getTimings()->getConnect(),
-                ssl:      $entry->getTimings()->getSsl(),
-            );
-
-            $session->getCookies()->addCookiesFromResponse($request->getUri(), $response);
-
-            $session->getHistory()->addEntry(new HistoryEntry($session->getCookies(), $request, $response, $timings));
+            $this->addEntryToSession($session, $entry);
         }
 
         return $session;
     }
 
-    protected function getHttpRequest(Request $request): RequestInterface
+    /**
+     * Add entry to session.
+     *
+     * @param Session $session
+     * @param Entry $entry
+     *
+     * @throws HttpClientException
+     */
+    public function addEntryToSession(Session $session, Entry $entry): void
+    {
+        $request = $this->getHttpRequest($entry->getRequest());
+        $response = $this->getHttpResponse($entry->getResponse());
+        $timings = $this->getTimings($entry);
+
+        $session->getCookies()->addCookiesFromResponse($request->getUri(), $response);
+        $session->getHistory()->addEntry(new HistoryEntry($session->getCookies(), $request, $response, $timings));
+    }
+
+    /**
+     * Get HTTP request.
+     *
+     * @param Request $request
+     *
+     * @return RequestInterface
+     */
+    public function getHttpRequest(Request $request): RequestInterface
     {
         $httpRequest = new \Berlioz\Http\Message\Request(
             method:  $request->getMethod(),
-            uri:     (string)$request->getUrl(),
+            uri:     $request->getUrl(),
             body:    $request->getPostData()?->getText(),
             headers: $this->getHeaders($request->getHeaders()),
         );
@@ -82,7 +91,14 @@ class HarParser
         return $httpRequest->withProtocolVersion($request->getHttpVersion());
     }
 
-    protected function getHttpResponse(Response $response): ResponseInterface
+    /**
+     * Get HTTP response.
+     *
+     * @param Response $response
+     *
+     * @return ResponseInterface
+     */
+    public function getHttpResponse(Response $response): ResponseInterface
     {
         $httpResponse = new \Berlioz\Http\Message\Response(
             body:         $response->getContent()->getText(),
@@ -92,6 +108,28 @@ class HarParser
         );
 
         return $httpResponse->withProtocolVersion($response->getHttpVersion());
+    }
+
+    /**
+     * Get timings.
+     *
+     * @param Entry $entry
+     *
+     * @return Timings
+     */
+    public function getTimings(Entry $entry): Timings
+    {
+        return new Timings(
+            dateTime: $entry->getStartedDateTime(),
+            send:     $entry->getTimings()->getSend(),
+            wait:     $entry->getTimings()->getWait(),
+            receive:  $entry->getTimings()->getReceive(),
+            total:    $entry->getTime(),
+            blocked:  $entry->getTimings()->getBlocked(),
+            dns:      $entry->getTimings()->getDns(),
+            connect:  $entry->getTimings()->getConnect(),
+            ssl:      $entry->getTimings()->getSsl(),
+        );
     }
 
     protected function getHeaders(array $headers): array
