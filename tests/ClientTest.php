@@ -257,21 +257,6 @@ class ClientTest extends TestCase
         $this->assertEquals('GET', $bodyExploded[0]);
     }
 
-//    public function testCurlOptions()
-//    {
-//        $options = [CURL_HTTP_VERSION_1_0, CURLOPT_IPRESOLVE];
-//        $client = new Client();
-//
-//        $client->setCurlOptions($options);
-//        $this->assertEquals($options, $client->getCurlOptions());
-//
-//        $client->setCurlOptions([CURLOPT_IPRESOLVE], true);
-//        $this->assertEquals([CURLOPT_IPRESOLVE], $client->getCurlOptions());
-//
-//        $client->setCurlOptions(array_merge($options, [CURLINFO_HEADER_OUT]));
-//        $this->assertEquals($options, $client->getCurlOptions());
-//    }
-
     public function testSessionCookies()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');

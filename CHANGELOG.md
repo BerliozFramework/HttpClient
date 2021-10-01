@@ -15,6 +15,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - Visibility of method `HarParser::getHttpRequest(Request $request): RequestInterface` to public
 - Visibility of method `HarParser::getHttpResponse(Response $response): ResponseInterface` to public
+- Merge options of request with global options
 
 ### Fixed
 

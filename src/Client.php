@@ -177,22 +177,23 @@ class Client implements ClientInterface, LoggerAwareInterface
      */
     protected function prepareRequest(
         RequestInterface $request,
-        CookiesManager|false|null $cookies = null
+        CookiesManager|false|null $cookies = null,
+        array $options = []
     ): RequestInterface {
         // Define default URI if not present
         if (empty($request->getUri()->getHost())) {
-            if (empty($this->options['baseUri'])) {
+            if (empty($options['baseUri'])) {
                 throw new HttpClientException('Missing host on request');
             }
 
             $uri = (string)$request->getUri();
-            $uri = Uri::createFromString(rtrim((string)$this->options['baseUri'], '/') . '/' . ltrim($uri, '/'));
+            $uri = Uri::createFromString(rtrim((string)$options['baseUri'], '/') . '/' . ltrim($uri, '/'));
 
             $request = $request->withUri($uri);
         }
 
         // Add default headers to request
-        foreach ($this->options['headers'] ?? [] as $name => $value) {
+        foreach ($options['headers'] ?? [] as $name => $value) {
             if ($request->hasHeader($name)) {
                 continue;
             }
@@ -217,6 +218,9 @@ class Client implements ClientInterface, LoggerAwareInterface
         $followLocationCounter = 0;
         $originalRequest = $request;
 
+        // Merge options with global options
+        $options = array_replace_recursive($this->options, $options);
+
         // Cookies manager
         // If option "cookies" is defined:
         // - false: no cookies sent in request
@@ -237,7 +241,7 @@ class Client implements ClientInterface, LoggerAwareInterface
 
         do {
             $this->sleep();
-            $request = $this->prepareRequest($request, $cookies);
+            $request = $this->prepareRequest($request, $cookies, $options);
             $adapter = $this->getAdapter($options['adapter'] ?? null);
 
             try {
