@@ -17,6 +17,7 @@ use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Uri;
+use Exception;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -255,6 +256,29 @@ class ClientTest extends TestCase
 
         $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
         $this->assertEquals('GET', $bodyExploded[0]);
+    }
+
+    public function testRequestWithCallback()
+    {
+        $nbCallback = 0;
+        $callback = function () use (&$nbCallback) {
+            $nbCallback++;
+        };
+        $client = new Client();
+        $response = $client->get('http://localhost:8080/request.php?redirect=2', options: ['callback' => $callback]);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(3, $nbCallback);
+    }
+
+    public function testRequestWithCallbackAndException()
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('My exception of callback');
+
+        $callback = fn() => throw new Exception('My exception of callback');
+        $client = new Client();
+        $client->request('get', 'http://localhost:8080/request.php?redirect=2', options: ['callback' => $callback]);
     }
 
     public function testSessionCookies()

@@ -10,6 +10,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - New method `HarParser::addEntryToSession(Session $session, Entry $entry): void`
 - New method `HarParser::getTimings(Entry $entry): Timings`
+- New `callback` option for requests
 
 ### Changed
 

@@ -26,6 +26,7 @@ use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream;
 use Berlioz\Http\Message\Uri;
+use Closure;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -259,6 +260,12 @@ class Client implements ClientInterface, LoggerAwareInterface
 
             $this->log($request, $response);
             $cookies->addCookiesFromResponse($request->getUri(), $response);
+
+            // Callback
+            $callback = $options['callback'] ?? null;
+            if ($callback instanceof Closure) {
+                $callback($request, $response);
+            }
 
             $followLocation = false;
             if (!in_array(
