@@ -258,6 +258,16 @@ class ClientTest extends TestCase
         $this->assertEquals('GET', $bodyExploded[0]);
     }
 
+    public function testRequestWithPreviousUriRequest()
+    {
+        $client = new Client();
+        $response1 = $client->get(Uri::createFromString('http://localhost:8080/request.php'));
+        $response2 = $client->get(Uri::createFromString('/request.php'));
+
+        $this->assertEquals(200, $response1->getStatusCode());
+        $this->assertEquals(200, $response2->getStatusCode());
+    }
+
     public function testRequestWithCallback()
     {
         $nbCallback = 0;

@@ -31,6 +31,7 @@ use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 
 /**
@@ -172,6 +173,7 @@ class Client implements ClientInterface, LoggerAwareInterface
      *
      * @param RequestInterface $request
      * @param CookiesManager|false|null $cookies
+     * @param array $options
      *
      * @return RequestInterface
      * @throws HttpClientException
@@ -181,16 +183,9 @@ class Client implements ClientInterface, LoggerAwareInterface
         CookiesManager|false|null $cookies = null,
         array $options = []
     ): RequestInterface {
-        // Define default URI if not present
-        if (empty($request->getUri()->getHost())) {
-            if (empty($options['baseUri'])) {
-                throw new HttpClientException('Missing host on request');
-            }
-
-            $uri = (string)$request->getUri();
-            $uri = Uri::createFromString(rtrim((string)$options['baseUri'], '/') . '/' . ltrim($uri, '/'));
-
-            $request = $request->withUri($uri);
+        $uriReconstituted = $this->reconstituteUri($request->getUri(), $options['baseUri'] ?? null);
+        if ($uriReconstituted !== $request->getUri()) {
+            $request = $request->withUri($uriReconstituted);
         }
 
         // Add default headers to request
@@ -209,6 +204,42 @@ class Client implements ClientInterface, LoggerAwareInterface
         }
 
         return $request;
+    }
+
+    /**
+     * Reconstitute URI.
+     *
+     * @param UriInterface $uri
+     * @param string|null $baseUri
+     *
+     * @return Uri
+     * @throws HttpClientException
+     */
+    protected function reconstituteUri(UriInterface $uri, ?string $baseUri): Uri
+    {
+        // Already host
+        if (!empty($uri->getHost())) {
+            return $uri;
+        }
+
+        if (null === $baseUri) {
+            // Get prev request to get base uri
+            $baseUri = $this->getSession()->getHistory()->getLast()?->getRequest()->getUri();
+
+            if (null === $baseUri) {
+                throw new HttpClientException(
+                    'Missing host on request, unable to reconstitute without "baseUri" option or previous request'
+                );
+            }
+
+            $baseUri = $baseUri->withPath('')->withQuery('')->withFragment('');
+        }
+
+        return Uri::createFromString(
+            rtrim((string)$baseUri, '/') .
+            '/' .
+            ltrim((string)$uri, '/')
+        );
     }
 
     /**
