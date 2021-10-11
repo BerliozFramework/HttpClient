@@ -60,6 +60,28 @@ class ClientTest extends TestCase
         $client->get($uri);
     }
 
+    public function testGet_tooManyRedirection_withDefinedNumber()
+    {
+        $uri = new Uri('http', 'localhost', 8080, '/request.php?redirect=10');
+        $client = new Client();
+        $response = $client->get($uri, options: ['followLocationLimit' => 10]);
+
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function testGet_noRedirection()
+    {
+        $uri = new Uri('http', 'localhost', 8080, '/request.php?redirect=10');
+        $client = new Client();
+        $response = $client->get($uri, options: ['followLocation' => false]);
+
+        $this->assertEquals(301, $response->getStatusCode());
+        $this->assertEquals(
+            ['http://localhost:8080/request.php?encoding=&redirect=9'],
+            $response->getHeader('Location')
+        );
+    }
+
     public function testPost()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');

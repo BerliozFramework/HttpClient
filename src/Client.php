@@ -67,6 +67,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $this->options = array_replace_recursive(
             [
                 'baseUri' => null,
+                'followLocation' => true,
                 'followLocationLimit' => 5,
                 'sleepTime' => 0,
                 'logFile' => null,
@@ -317,7 +318,10 @@ class Client implements ClientInterface, LoggerAwareInterface
             }
 
             // Follow location ?
-            $followLocation = ($followLocationCounter++ <= ($this->options['followLocationLimit'] ?? 5));
+            if (false === $options['followLocation']) {
+                continue;
+            }
+            $followLocation = ($followLocationCounter++ <= ($options['followLocationLimit'] ?? 5));
             if (!$followLocation) {
                 throw new RequestException('Too many redirection from host', $originalRequest);
             }
@@ -350,8 +354,8 @@ class Client implements ClientInterface, LoggerAwareInterface
         } while ($followLocation);
 
         // Exceptions if error?
-        if ($this->options['exceptions']) {
-            if (intval(substr((string)$response->getStatusCode(), 0, 1)) != 2) {
+        if ($options['exceptions']) {
+            if (intval(substr((string)$response->getStatusCode(), 0, 1)) > 3) {
                 throw new HttpException(
                     sprintf('%d - %s', $response->getStatusCode(), $response->getReasonPhrase()),
                     $originalRequest,
