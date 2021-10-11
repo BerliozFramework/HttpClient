@@ -19,7 +19,10 @@ use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use DateTimeImmutable;
 use ElGigi\HarParser\Parser;
+use Exception;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 
 class SessionTest extends TestCase
 {
@@ -53,6 +56,23 @@ class SessionTest extends TestCase
         $this->assertCount(61, $session->getHistory());
     }
 
+    public function testCreateFromHarFile()
+    {
+        $harFile = __DIR__ . '/../vendor/elgigi/har-parser/tests/example.har';
+        $session = Session::createFromHarFile($harFile);
+
+        $this->assertCount(15, $session->getCookies());
+        $this->assertCount(61, $session->getHistory());
+    }
+
+    public function testCreateFromHarFile_notFound()
+    {
+        $this->expectException(Exception::class);
+
+        $harFile = __DIR__ . '/../vendor/elgigi/har-parser/tests/fake.har';
+        Session::createFromHarFile($harFile);
+    }
+
     public function testGetHar()
     {
         $session = new Session();
@@ -62,10 +82,10 @@ class SessionTest extends TestCase
             new Response('HOME', headers: ['Content-Type' => 'text/html']),
             new Timings(
                 dateTime: new DateTimeImmutable('2021-07-22T22:30:00.000+02:00'),
-                send:     2,
-                wait:     .5,
-                receive:  10,
-                total:    12.5
+                send: 2,
+                wait: .5,
+                receive: 10,
+                total: 12.5
             ),
         );
         $session->getHistory()->add(
@@ -74,10 +94,10 @@ class SessionTest extends TestCase
             new Response(null, statusCode: 301, headers: ['Location' => ['/docs/current/']]),
             new Timings(
                 dateTime: new DateTimeImmutable('2021-07-22T22:30:00.000+02:00'),
-                send:     1.2,
-                wait:     .5,
-                receive:  10,
-                total:    11.7
+                send: 1.2,
+                wait: .5,
+                receive: 10,
+                total: 11.7
             ),
         );
         $session->getHistory()->add(
@@ -86,10 +106,10 @@ class SessionTest extends TestCase
             new Response('DOCUMENTATION', headers: ['Content-Type' => 'text/html']),
             new Timings(
                 dateTime: new DateTimeImmutable('2021-07-22T22:30:00.000+02:00'),
-                send:     2,
-                wait:     .7,
-                receive:  9,
-                total:    11.7
+                send: 2,
+                wait: .7,
+                receive: 9,
+                total: 11.7
             ),
         );
 
@@ -99,5 +119,35 @@ class SessionTest extends TestCase
         );
 
         return $session;
+    }
+
+    public function testGetLastRequest()
+    {
+        $session = Session::createFromHarFile(__DIR__ . '/../vendor/elgigi/har-parser/tests/example.har');
+
+        $this->assertInstanceOf(RequestInterface::class, $session->getLastRequest());
+        $this->assertSame($session->getHistory()->getLast()->getRequest(), $session->getLastRequest());
+    }
+
+    public function testGetLastRequest_none()
+    {
+        $session = new Session();
+
+        $this->assertNull($session->getLastRequest());
+    }
+
+    public function testGetLastResponse()
+    {
+        $session = Session::createFromHarFile(__DIR__ . '/../vendor/elgigi/har-parser/tests/example.har');
+
+        $this->assertInstanceOf(ResponseInterface::class, $session->getLastResponse());
+        $this->assertSame($session->getHistory()->getLast()->getResponse(), $session->getLastResponse());
+    }
+
+    public function testGetLastResponse_none()
+    {
+        $session = new Session();
+
+        $this->assertNull($session->getLastResponse());
     }
 }

@@ -19,6 +19,10 @@ use Berlioz\Http\Client\Har\HarGenerator;
 use Berlioz\Http\Client\Har\HarParser;
 use Berlioz\Http\Client\History\History;
 use ElGigi\HarParser\Entities\Log;
+use ElGigi\HarParser\Exception\InvalidArgumentException;
+use ElGigi\HarParser\Parser;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Class Session.
@@ -29,11 +33,35 @@ class Session
     protected CookiesManager $cookies;
     protected History $history;
 
+    /**
+     * Create from HAR.
+     *
+     * @param Log $har
+     *
+     * @return static
+     * @throws Exception\HttpClientException
+     */
     public static function createFromHar(Log $har): static
     {
         $harParser = new HarParser();
 
         return $harParser->handle($har);
+    }
+
+    /**
+     * Create from HAR file.
+     *
+     * @param string $filename
+     *
+     * @return static
+     * @throws Exception\HttpClientException
+     * @throws InvalidArgumentException
+     */
+    public static function createFromHarFile(string $filename): static
+    {
+        $harParser = new Parser();
+
+        return static::createFromHar($harParser->parse($filename, true));
     }
 
     public function __construct(?string $name = null)
@@ -87,6 +115,26 @@ class Session
     public function getHistory(): History
     {
         return $this->history;
+    }
+
+    /**
+     * Get last request.
+     *
+     * @return RequestInterface|null
+     */
+    public function getLastRequest(): ?RequestInterface
+    {
+        return $this->history->getLast()?->getRequest();
+    }
+
+    /**
+     * Get last response.
+     *
+     * @return ResponseInterface|null
+     */
+    public function getLastResponse(): ?ResponseInterface
+    {
+        return $this->history->getLast()?->getResponse();
     }
 
     /**

@@ -11,6 +11,9 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - New method `HarParser::addEntryToSession(Session $session, Entry $entry): void`
 - New method `HarParser::getTimings(Entry $entry): Timings`
 - New `callback` option for requests
+- New method `Session::getLastRequest(): ?RequestInterface`
+- New method `Session::getLastResponse(): ?ResponseInterface`
+- New method `Session::createFromHarFile(): Session`
 
 ### Changed
 
