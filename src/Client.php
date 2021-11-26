@@ -94,10 +94,7 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
         $this->closeLogResource();
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function serialize(): string
+    public function __serialize(): array
     {
         // Make history
         $bodies = [];
@@ -109,33 +106,26 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
             }
         }
 
-        return serialize(
-            [
-                'options' => $this->options,
-                'curlOptions' => $this->curlOptions,
-                'defaultHeaders' => $this->defaultHeaders,
-                'history' => $this->history,
-                'cookies' => $this->cookies,
-                'bodies' => $bodies,
-            ]
-        );
+        return [
+            'options' => $this->options,
+            'curlOptions' => $this->curlOptions,
+            'defaultHeaders' => $this->defaultHeaders,
+            'history' => $this->history,
+            'cookies' => $this->cookies,
+            'bodies' => $bodies,
+        ];
     }
 
-    /**
-     * @inheritdoc
-     */
-    public function unserialize($serialized)
+    public function __unserialize(array $data): void
     {
-        $tmpUnserialized = unserialize($serialized);
-
-        $this->options = $tmpUnserialized['options'];
-        $this->curlOptions = $tmpUnserialized['curlOptions'];
-        $this->defaultHeaders = $tmpUnserialized['defaultHeaders'];
-        $this->history = $tmpUnserialized['history'];
-        $this->cookies = $tmpUnserialized['cookies'];
+        $this->options = $data['options'];
+        $this->curlOptions = $data['curlOptions'];
+        $this->defaultHeaders = $data['defaultHeaders'];
+        $this->history = $data['history'];
+        $this->cookies = $data['cookies'];
 
         // Construct history
-        foreach ($tmpUnserialized['bodies'] as $iEntry => $entry) {
+        foreach ($data['bodies'] as $iEntry => $entry) {
             foreach ($entry as $type => $body) {
                 $stream = new Stream();
                 $stream->write($body);
@@ -143,6 +133,22 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
                 $this->history[$iEntry][$type] = $this->history[$iEntry][$type]->withBody($stream);
             }
         }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function serialize(): string
+    {
+        return serialize($this->__serialize());
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function unserialize($serialized)
+    {
+        $this->__unserialize(unserialize($serialized));
     }
 
     /**
