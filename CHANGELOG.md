@@ -15,6 +15,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - New method `Session::createFromHarFile(): Session`
 - New `callback` option for requests
 - New `followLocation` option for requests, return 3xx Response object if it's a redirection
+- Add missing 'Content-Length' header during preparation of request
 
 ### Changed
 

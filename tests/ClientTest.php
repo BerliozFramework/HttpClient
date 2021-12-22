@@ -16,11 +16,13 @@ use Berlioz\Http\Client\Client;
 use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Message\Request;
+use Berlioz\Http\Message\Stream\MemoryStream;
 use Berlioz\Http\Message\Uri;
 use Exception;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use ReflectionMethod;
 use ReflectionObject;
 
 class ClientTest extends TestCase
@@ -343,5 +345,42 @@ class ClientTest extends TestCase
             $client->getSession()->getHistory()->get(1)->getResponse()->getBody()->getContents(),
             $clientUnserialized->getSession()->getHistory()->get(1)->getResponse()->getBody()->getContents()
         );
+    }
+
+    public function testContentLengthHeader()
+    {
+        $client = new Client();
+        $reflection = new ReflectionMethod($client, 'prepareRequest');
+        $reflection->setAccessible(true);
+
+        $request = new Request('get', 'http://localhost:8080/request.php', new MemoryStream('FOO'));
+
+        $this->assertFalse($request->hasHeader('Content-Length'));
+
+        $request = $reflection->invoke($client, $request);
+
+        $this->assertTrue($request->hasHeader('Content-Length'));
+        $this->assertEquals(['3'], $request->getHeader('Content-Length'));
+    }
+
+    public function testContentLengthHeader_alreadyDefined()
+    {
+        $client = new Client();
+        $reflection = new ReflectionMethod($client, 'prepareRequest');
+        $reflection->setAccessible(true);
+
+        $request = new Request(
+            'get',
+            'http://localhost:8080/request.php',
+            new MemoryStream('FOO'),
+            ['Content-Length' => 10]
+        );
+
+        $this->assertTrue($request->hasHeader('Content-Length'));
+
+        $request = $reflection->invoke($client, $request);
+
+        $this->assertTrue($request->hasHeader('Content-Length'));
+        $this->assertEquals(['10'], $request->getHeader('Content-Length'));
     }
 }

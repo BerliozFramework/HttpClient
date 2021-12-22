@@ -198,6 +198,15 @@ class Client implements ClientInterface, LoggerAwareInterface
             $request = $request->withHeader($name, $value);
         }
 
+        // Add content length
+        if (false === $request->hasHeader('Content-Length')) {
+            $length = $request->getBody()->getSize();
+
+            if (null !== $length) {
+                $request = $request->withHeader('Content-Length', $request->getBody()->getSize());
+            }
+        }
+
         // Add cookies to request
         if (false !== $cookies) {
             $cookies = $cookies ?? new CookiesManager();
