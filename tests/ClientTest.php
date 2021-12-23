@@ -255,7 +255,17 @@ class ClientTest extends TestCase
         $history = $client->getSession()->getHistory()->get(0);
         $request = $history->getRequest();
 
-        $this->assertEquals(array_merge($defaultHeaders, ['Header1' => ['Value2', 'Value1']]), $request->getHeaders());
+        $this->assertEquals(
+            array_merge(
+                $defaultHeaders,
+                [
+                    'Header1' => ['Value2', 'Value1'],
+                    'Host' => ['localhost'],
+                    'Content-Length' => [0]
+                ]
+            ),
+            $request->getHeaders()
+        );
     }
 
     public function testRequest()

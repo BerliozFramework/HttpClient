@@ -25,7 +25,7 @@
     "php": "^8.0",
     "ext-mbstring": "*",
     "ext-zlib": "*",
-    "berlioz/http-message": "^2.0",
+    "berlioz/http-message": "^2.1",
     "elgigi/har-parser": "dev-main as v1.0",
     "psr/http-client": "^1.0",
     "psr/log": "^1.0"

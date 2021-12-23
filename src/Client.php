@@ -31,7 +31,6 @@ use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 
 /**
@@ -184,10 +183,12 @@ class Client implements ClientInterface, LoggerAwareInterface
         CookiesManager|false|null $cookies = null,
         array $options = []
     ): RequestInterface {
-        $uriReconstituted = $this->reconstituteUri($request->getUri(), $options['baseUri'] ?? null);
-        if ($uriReconstituted !== $request->getUri()) {
-            $request = $request->withUri($uriReconstituted);
-        }
+        $request = $request->withUri(
+            Uri::create(
+                $request->getUri(),
+                $options['baseUri'] ?? $this->getSession()->getHistory()->getLast()?->getRequest()->getUri()
+            )
+        );
 
         // Add default headers to request
         foreach ($options['headers'] ?? [] as $name => $value) {
@@ -214,42 +215,6 @@ class Client implements ClientInterface, LoggerAwareInterface
         }
 
         return $request;
-    }
-
-    /**
-     * Reconstitute URI.
-     *
-     * @param UriInterface $uri
-     * @param string|null $baseUri
-     *
-     * @return Uri
-     * @throws HttpClientException
-     */
-    protected function reconstituteUri(UriInterface $uri, ?string $baseUri): Uri
-    {
-        // Already host
-        if (!empty($uri->getHost())) {
-            return $uri;
-        }
-
-        if (null === $baseUri) {
-            // Get prev request to get base uri
-            $baseUri = $this->getSession()->getHistory()->getLast()?->getRequest()->getUri();
-
-            if (null === $baseUri) {
-                throw new HttpClientException(
-                    'Missing host on request, unable to reconstitute without "baseUri" option or previous request'
-                );
-            }
-
-            $baseUri = $baseUri->withPath('')->withQuery('')->withFragment('');
-        }
-
-        return Uri::createFromString(
-            rtrim((string)$baseUri, '/') .
-            '/' .
-            ltrim((string)$uri, '/')
-        );
     }
 
     /**
