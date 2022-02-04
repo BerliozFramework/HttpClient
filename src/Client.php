@@ -24,7 +24,6 @@ use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
-use Berlioz\Http\Message\Stream;
 use Berlioz\Http\Message\Uri;
 use Closure;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -176,7 +175,6 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param array $options
      *
      * @return RequestInterface
-     * @throws HttpClientException
      */
     protected function prepareRequest(
         RequestInterface $request,
@@ -191,13 +189,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         );
 
         // Add default headers to request
-        foreach ($options['headers'] ?? [] as $name => $value) {
-            if ($request->hasHeader($name)) {
-                continue;
-            }
-
-            $request = $request->withHeader($name, $value);
-        }
+        $request = $this->addDefaultHeaders($request, $options['headers'] ?? []);
 
         // Add content length
         if (false === $request->hasHeader('Content-Length')) {
@@ -315,16 +307,12 @@ class Client implements ClientInterface, LoggerAwareInterface
                 }
             }
 
-            // Reset request for redirection, but keeps headers
-            $request =
-                $request
-                    ->withMethod(Request::HTTP_METHOD_GET)
-                    ->withHeader('Referer', (string)$request->getUri())
-                    ->withUri($redirectUri)
-                    ->withBody(new Stream());
-
-            // Add cookies to the new request
-            $request = $cookies->addCookiesToRequest($request);
+            // Create request for redirection
+            $request = $this->prepareRequest(
+                new Request(Request::HTTP_METHOD_GET, Uri::create($redirectUri, $request->getUri())),
+                $cookies,
+                array_replace($options, ['headers' => ['Referer' => (string)$request->getUri()]])
+            );
         } while ($followLocation);
 
         // Exceptions if error?
