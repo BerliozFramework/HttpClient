@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Components;
 
+use Psr\Http\Message\RequestInterface;
+
 /**
  * Trait DefaultHeadersTrait.
  */
@@ -21,6 +23,27 @@ trait DefaultHeadersTrait
 {
     /** @var array Default headers */
     protected array $defaultHeaders = [];
+
+    /**
+     * Add default headers.
+     *
+     * @param RequestInterface $request
+     * @param array|null $defaultHeaders
+     *
+     * @return RequestInterface
+     */
+    public function addDefaultHeaders(RequestInterface $request, ?array $defaultHeaders = null): RequestInterface
+    {
+        foreach (($defaultHeaders ?? $this->defaultHeaders) as $name => $value ) {
+            if ($request->hasHeader($name)) {
+                continue;
+            }
+
+            $request = $request->withHeader($name, $value);
+        }
+
+        return $request;
+    }
 
     /**
      * Get default headers.
