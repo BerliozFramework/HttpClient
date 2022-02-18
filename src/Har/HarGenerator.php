@@ -41,7 +41,7 @@ class HarGenerator
             version: '1.2',
             creator: new Har\Creator(name: 'Berlioz HTTP Client', version: '2', comment: 'https://getberlioz.com'),
             browser: null,
-            pages:   [],
+            pages: [],
             entries: [],
         );
 
@@ -63,21 +63,21 @@ class HarGenerator
         $response = $this->getResponse($entry->getResponse(), $entry->getRequest()->getUri());
 
         return new Har\Entry(
-            pageref:         null,
+            pageref: null,
             startedDateTime: $entry->getTimings()?->getDateTime() ?? new DateTimeImmutable(),
-            time:            $entry->getTimings()?->getTotal() ?? -1,
-            request:         $request,
-            response:        $response ?? null,
-            cache:           [],
-            timings:         new Har\Timings(
-                                 blocked: $entry->getTimings()?->getBlocked() ?? null,
-                                 dns:     $entry->getTimings()?->getDns() ?? null,
-                                 connect: $entry->getTimings()?->getConnect() ?? null,
-                                 send:    $entry->getTimings()?->getSend() ?? 0,
-                                 wait:    $entry->getTimings()?->getWait() ?? 0,
-                                 receive: $entry->getTimings()?->getReceive() ?? 0,
-                                 ssl:     $entry->getTimings()?->getSsl() ?? null,
-                             ),
+            time: $entry->getTimings()?->getTotal() ?? -1,
+            request: $request,
+            response: $response ?? null,
+            cache: [],
+            timings: new Har\Timings(
+                blocked: $entry->getTimings()?->getBlocked() ?? null,
+                dns: $entry->getTimings()?->getDns() ?? null,
+                connect: $entry->getTimings()?->getConnect() ?? null,
+                send: $entry->getTimings()?->getSend() ?? 0,
+                wait: $entry->getTimings()?->getWait() ?? 0,
+                receive: $entry->getTimings()?->getReceive() ?? 0,
+                ssl: $entry->getTimings()?->getSsl() ?? null,
+            ),
             serverIPAddress: null,
         );
     }
@@ -87,33 +87,33 @@ class HarGenerator
         if ($request->getBody()->getSize() > 0) {
             $postData = new Har\PostData(
                 mimeType: $request->getHeader('Content-Type')[0] ?? 'text/plain',
-                params:   [],
-                text:     $request->getBody()->getContents(),
+                params: [],
+                text: $request->getBody()->getContents(),
             );
         }
 
         return new Har\Request(
-            method:      $request->getMethod(),
-            url:         (string)$request->getUri(),
+            method: $request->getMethod(),
+            url: (string)$request->getUri(),
             httpVersion: $request->getProtocolVersion(),
-            cookies:     array_map(
-                             function ($cookie) {
-                                 return Har\Cookie::load($cookie);
-                             },
-                             $cookies
-                         ),
-            headers:     $this->getHeaders($request),
+            cookies: array_map(
+                function ($cookie) {
+                    return Har\Cookie::load($cookie);
+                },
+                $cookies
+            ),
+            headers: $this->getHeaders($request),
             queryString: array_map(
-                             function ($value) {
-                                 $value = explode('=', $value, 2);
+                function ($value) {
+                    $value = explode('=', $value, 2);
 
-                                 return new Har\QueryString($value[0], urldecode($value[1] ?? ''));
-                             },
-                             explode(ini_get('arg_separator.output'), $request->getUri()->getQuery())
-                         ),
-            postData:    $postData ?? null,
+                    return new Har\QueryString($value[0], urldecode($value[1] ?? ''));
+                },
+                explode(ini_get('arg_separator.output'), $request->getUri()->getQuery())
+            ),
+            postData: $postData ?? null,
             headersSize: -1,
-            bodySize:    $request->getBody()->getSize(),
+            bodySize: $request->getBody()->getSize(),
         );
     }
 
@@ -124,13 +124,13 @@ class HarGenerator
                 $cookieData = $this->parseCookie($raw);
 
                 return new Har\Cookie(
-                    name:     $cookieData['name'],
-                    value:    $cookieData['value'],
-                    path:     $cookieData['path'],
-                    domain:   $cookieData['domain'] ?? $uri->getHost(),
-                    expires:  $cookieData['expires'],
+                    name: $cookieData['name'],
+                    value: $cookieData['value'],
+                    path: $cookieData['path'],
+                    domain: $cookieData['domain'] ?? $uri->getHost(),
+                    expires: $cookieData['expires'],
                     httpOnly: $cookieData['httponly'],
-                    secure:   $cookieData['secure'],
+                    secure: $cookieData['secure'],
                     sameSite: $cookieData['samesite'],
                 );
             },
@@ -138,22 +138,23 @@ class HarGenerator
         );
 
         $content = new Har\Content(
-            size:        $response->getBody()->getSize(),
+            size: $response->getBody()->getSize(),
             compression: null,
-            mimeType:    $response->getHeader('Content-Type')[0] ?? 'text/plain',
-            text:        $response->getBody()->getContents(),
+            mimeType: $response->getHeader('Content-Type')[0] ?? 'text/plain',
+            text: base64_encode($response->getBody()->getContents()),
+            encoding: 'base64',
         );
 
         return new Har\Response(
-            status:      $response->getStatusCode(),
-            statusText:  $response->getReasonPhrase(),
+            status: $response->getStatusCode(),
+            statusText: $response->getReasonPhrase(),
             httpVersion: $response->getProtocolVersion(),
-            cookies:     $cookies,
-            headers:     $this->getHeaders($response),
-            content:     $content,
+            cookies: $cookies,
+            headers: $this->getHeaders($response),
+            content: $content,
             redirectURL: $response->getHeader('Location')[0] ?? '',
             headersSize: -1,
-            bodySize:    $response->getBody()->getSize(),
+            bodySize: $response->getBody()->getSize(),
         );
     }
 

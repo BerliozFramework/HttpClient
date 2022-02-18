@@ -10,6 +10,10 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - New method `DefaultHeadersTrait::addDefaultHeaders`
 
+### Changed
+
+- Base64 encoding for HAR response content
+
 ### Fixed
 
 - Redirection keep old headers like `Content-Length`

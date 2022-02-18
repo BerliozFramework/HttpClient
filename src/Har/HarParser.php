@@ -82,9 +82,9 @@ class HarParser
     public function getHttpRequest(Request $request): RequestInterface
     {
         $httpRequest = new \Berlioz\Http\Message\Request(
-            method:  $request->getMethod(),
-            uri:     $request->getUrl(),
-            body:    $request->getPostData()?->getText(),
+            method: $request->getMethod(),
+            uri: $request->getUrl(),
+            body: $request->getPostData()?->getText(),
             headers: $this->getHeaders($request->getHeaders()),
         );
 
@@ -101,9 +101,9 @@ class HarParser
     public function getHttpResponse(Response $response): ResponseInterface
     {
         $httpResponse = new \Berlioz\Http\Message\Response(
-            body:         $response->getContent()->getText(),
-            statusCode:   $response->getStatus(),
-            headers:      $this->getHeaders($response->getHeaders()),
+            body: $response->getContent()->getText(),
+            statusCode: $response->getStatus(),
+            headers: $this->getHeaders($response->getHeaders()),
             reasonPhrase: $response->getStatusText(),
         );
 
@@ -121,14 +121,14 @@ class HarParser
     {
         return new Timings(
             dateTime: $entry->getStartedDateTime(),
-            send:     $entry->getTimings()->getSend(),
-            wait:     $entry->getTimings()->getWait(),
-            receive:  $entry->getTimings()->getReceive(),
-            total:    $entry->getTime(),
-            blocked:  $entry->getTimings()->getBlocked(),
-            dns:      $entry->getTimings()->getDns(),
-            connect:  $entry->getTimings()->getConnect(),
-            ssl:      $entry->getTimings()->getSsl(),
+            send: $entry->getTimings()->getSend(),
+            wait: $entry->getTimings()->getWait(),
+            receive: $entry->getTimings()->getReceive(),
+            total: $entry->getTime(),
+            blocked: $entry->getTimings()->getBlocked(),
+            dns: $entry->getTimings()->getDns(),
+            connect: $entry->getTimings()->getConnect(),
+            ssl: $entry->getTimings()->getSsl(),
         );
     }
 
