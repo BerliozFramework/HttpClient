@@ -100,8 +100,13 @@ class HarParser
      */
     public function getHttpResponse(Response $response): ResponseInterface
     {
+        $body = $response->getContent()->getText();
+        if ('base64' === $response->getContent()->getEncoding()) {
+            $body = base64_decode($body);
+        }
+
         $httpResponse = new \Berlioz\Http\Message\Response(
-            body: $response->getContent()->getText(),
+            body: $body,
             statusCode: $response->getStatus(),
             headers: $this->getHeaders($response->getHeaders()),
             reasonPhrase: $response->getStatusText(),
