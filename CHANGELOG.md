@@ -9,6 +9,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 ### Added
 
 - New method `DefaultHeadersTrait::addDefaultHeaders`
+- New `HarAdapter` to simulate connection with HAR files
 
 ### Changed
 
