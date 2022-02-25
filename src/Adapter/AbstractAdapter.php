@@ -15,8 +15,10 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client\Adapter;
 
 use Berlioz\Http\Client\History\Timings;
+use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Stream;
 use InvalidArgumentException;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -34,6 +36,32 @@ abstract class AbstractAdapter implements AdapterInterface
     public function getTimings(): ?Timings
     {
         return $this->timings ?? null;
+    }
+
+    /**
+     * Get headers lines.
+     *
+     * @param Request $request
+     *
+     * @return array
+     */
+    protected function getHeadersLines(RequestInterface $request): array
+    {
+        $headers = [];
+
+        // Host header
+        $headers[] = sprintf('Host: %s', ($request->getHeader('host') ?: [$request->getUri()->getHost()])[0]);
+        foreach ($request->getHeaders() as $name => $values) {
+            if ('host' == strtolower($name)) {
+                continue;
+            }
+
+            foreach ($values as $value) {
+                $headers[] = sprintf('%s: %s', $name, $value);
+            }
+        }
+
+        return $headers;
     }
 
     /**

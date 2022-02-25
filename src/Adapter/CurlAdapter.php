@@ -137,18 +137,18 @@ class CurlAdapter extends AbstractAdapter
         $this->timings = new Timings(
             dateTime: $dateTime,
             send: (float)((curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)
-                - curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)) / 10),
             wait: (float)((curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)
-                - curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)) / 10),
             receive: (float)((curl_getinfo($ch, CURLINFO_TOTAL_TIME_T)
-                - curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)) / 10),
             total: (float)(curl_getinfo($ch, CURLINFO_TOTAL_TIME_T) / 10),
             blocked: -1,
             dns: (float)(curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T) / 10),
             connect: (float)((curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)
-                - curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T)) / 10),
             ssl: (float)((curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)
-                - curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)) / 10),
         );
 
         // Response
@@ -208,13 +208,7 @@ class CurlAdapter extends AbstractAdapter
         {
             curl_setopt($ch, CURLOPT_HEADER, true);
             curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-            $headers = [];
-            foreach ($request->getHeaders() as $name => $values) {
-                foreach ($values as $value) {
-                    $headers[] = sprintf('%s: %s', $name, $value);
-                }
-            }
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->getHeadersLines($request));
         }
 
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);

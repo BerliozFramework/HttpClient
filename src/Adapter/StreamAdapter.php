@@ -141,13 +141,10 @@ class StreamAdapter extends AbstractAdapter
             )
         ) ?: throw new NetworkException('Unable to write request headers', $request);
 
-        fwrite($fp, sprintf("Host: %s\r\n", $request->getUri()->getHost()));
-
-        foreach ($request->getHeaders() as $name => $values) {
-            foreach ($values as $value) {
-                fwrite($fp, sprintf('%s: %s', $name, $value) . "\r\n") ?:
-                    throw new NetworkException('Unable to write request headers', $request);
-            }
+        // Headers
+        foreach ($this->getHeadersLines($request) as $headerLine) {
+            fwrite($fp, $headerLine . "\r\n") ?:
+                throw new NetworkException('Unable to write request headers', $request);
         }
 
         // Separator for body

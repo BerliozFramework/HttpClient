@@ -18,6 +18,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 ### Fixed
 
 - Redirection keep old headers like `Content-Length`
+- Duplicate host header
 
 ## [2.0.0-beta2] - 2022-01-13
 
