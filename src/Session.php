@@ -141,11 +141,28 @@ class Session
      * Get HAR.
      *
      * @return Log
+     * @throws Exception\HttpClientException
      */
     public function getHar(): Log
     {
         $generator = new HarGenerator();
+        $generator->handle($this);
 
-        return $generator->handle($this);
+        return $generator->getHar();
+    }
+
+    /**
+     * Write HAR file.
+     *
+     * @param resource $fp
+     *
+     * @return void
+     * @throws Exception\HttpClientException
+     */
+    public function writeHar($fp): void
+    {
+        $generator = new HarGenerator();
+        $generator->handle($this);
+        $generator->writeHar($fp);
     }
 }

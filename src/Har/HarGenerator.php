@@ -15,52 +15,126 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client\Har;
 
 use Berlioz\Http\Client\Components\CookieParserTrait;
+use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\History\HistoryEntry;
 use Berlioz\Http\Client\Session;
 use Berlioz\Http\Message\Uri;
 use DateTimeImmutable;
+use ElGigi\HarParser\Builder as HarBuilder;
 use ElGigi\HarParser\Entities as Har;
+use ElGigi\HarParser\Exception\InvalidArgumentException;
+use Exception;
+use Generator;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 class HarGenerator
 {
     use CookieParserTrait;
+
+    private Session $session;
+
+    public function __construct()
+    {
+    }
 
     /**
      * Handle history.
      *
      * @param Session $session
      *
-     * @return Har\Log
+     * @return void
      */
-    public function handle(Session $session): Har\Log
+    public function handle(Session $session): void
     {
-        $log = new Har\Log(
-            version: '1.2',
-            creator: new Har\Creator(name: 'Berlioz HTTP Client', version: '2', comment: 'https://getberlioz.com'),
-            browser: null,
-            pages: [],
-            entries: [],
-        );
-
-        /** @var HistoryEntry $historyEntry */
-        foreach ($session->getHistory() as $historyEntry) {
-            if (null === $historyEntry->getResponse()) {
-                continue;
-            }
-
-            $log->addEntry($this->getEntry($historyEntry));
-        }
-
-        return $log;
+        $this->session = $session;
     }
 
+    /**
+     * Get HAR object.
+     *
+     * @return Har\Log
+     * @throws HttpClientException
+     */
+    public function getHar(): Har\Log
+    {
+        $this->session ?? throw new HttpClientException('No session handled');
+
+        try {
+            $builder = new HarBuilder\Builder();
+            $builder->setCreator($this->getCreator());
+            $builder->addEntry(...iterator_to_array($this->getEntries(), false));
+
+            return $builder->build();
+        } catch (Throwable $throwable) {
+            throw new HttpClientException('Unable to generate HAR file', previous: $throwable);
+        }
+    }
+
+    /**
+     * Write HAR file.
+     *
+     * @param resource $fp
+     *
+     * @return void
+     * @throws HttpClientException
+     */
+    public function writeHar($fp): void
+    {
+        $this->session ?? throw new HttpClientException('No session handled');
+
+        try {
+            $builder = new HarBuilder\BuilderStream($fp);
+            $builder->setCreator($this->getCreator());
+
+            foreach ($this->getEntries() as $entry) {
+                $builder->addEntry($entry);
+            }
+        } catch (Throwable $throwable) {
+            throw new HttpClientException('Unable to write HAR file', previous: $throwable);
+        }
+    }
+
+    /**
+     * Get creator.
+     *
+     * @return Har\Creator
+     */
+    protected function getCreator(): Har\Creator
+    {
+        return new Har\Creator(name: 'Berlioz HTTP Client', version: '2', comment: 'https://getberlioz.com');
+    }
+
+    /**
+     * Get entries.
+     *
+     * @return Generator
+     * @throws InvalidArgumentException
+     */
+    protected function getEntries(): Generator
+    {
+        foreach ($this->session->getHistory() as $historyEntry) {
+            yield $this->getEntry($historyEntry);
+        }
+    }
+
+    /**
+     * Get entry from history entry.
+     *
+     * @param HistoryEntry $entry
+     *
+     * @return Har\Entry
+     * @throws InvalidArgumentException
+     */
     protected function getEntry(HistoryEntry $entry): Har\Entry
     {
         $request = $this->getRequest($entry->getRequest(), $entry->getCookies());
-        $response = $this->getResponse($entry->getResponse(), $entry->getRequest()->getUri());
+        $response = $entry->getResponse() ? $this->getResponse(
+            $entry->getResponse(),
+            $entry->getRequest()->getUri()
+        ) : null;
 
         return new Har\Entry(
             pageref: null,
@@ -82,6 +156,15 @@ class HarGenerator
         );
     }
 
+    /**
+     * Get HAR response from ResponseInterface.
+     *
+     * @param RequestInterface $request
+     * @param array $cookies
+     *
+     * @return Har\Request
+     * @throws InvalidArgumentException
+     */
     protected function getRequest(RequestInterface $request, array $cookies): Har\Request
     {
         if ($request->getBody()->getSize() > 0) {
@@ -117,6 +200,16 @@ class HarGenerator
         );
     }
 
+    /**
+     * Get HAR response from ResponseInterface.
+     *
+     * @param ResponseInterface $response
+     * @param Uri $uri
+     *
+     * @return Har\Response
+     * @throws InvalidArgumentException
+     * @throws Exception
+     */
     protected function getResponse(ResponseInterface $response, Uri $uri): Har\Response
     {
         $cookies = array_map(
@@ -137,12 +230,21 @@ class HarGenerator
             $response->getHeader('Set-Cookie')
         );
 
+        // Recopy stream content into memory
+        $stream = $response->getBody();
+        if ($stream->isReadable() && $stream->getSize() > 0) {
+            $tmp = fopen('php://memory', 'w+');
+            $stream->seek(0);
+            while (!$stream->eof()) {
+                fwrite($tmp, $stream->read(8192));
+            }
+        }
+
         $content = new Har\Content(
             size: $response->getBody()->getSize(),
             compression: null,
             mimeType: $response->getHeader('Content-Type')[0] ?? 'text/plain',
-            text: base64_encode($response->getBody()->getContents()),
-            encoding: 'base64',
+            text: $tmp ?? null,
         );
 
         return new Har\Response(
