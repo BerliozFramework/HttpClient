@@ -10,6 +10,10 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - Write HAR file to a stream
 
+### Removed
+
+- Dependency with mbstring
+
 ## [2.0.0-beta3] - 2022-02-25
 
 ### Added
