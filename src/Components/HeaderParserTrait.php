@@ -14,8 +14,6 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Components;
 
-use function mb_convert_case;
-
 /**
  * Trait HeaderParserTrait.
  */
@@ -56,7 +54,7 @@ trait HeaderParserTrait
         $headers = array_filter($headers);
 
         foreach ($headers as $header) {
-            $header[0] = mb_convert_case($header[0], MB_CASE_TITLE);
+            $header[0] = ucwords($header[0], '-');
             $header[1] = $header[1] ?? null;
 
             if (null === $header[1]) {

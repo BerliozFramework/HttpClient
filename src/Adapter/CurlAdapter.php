@@ -155,7 +155,7 @@ class CurlAdapter extends AbstractAdapter
         $protocolVersion = $reasonPhrase = null;
         $headersSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         $headers = $this->parseHeaders(
-            mb_substr($content, 0, $headersSize),
+            substr($content, 0, $headersSize),
             protocolVersion: $protocolVersion,
             reasonPhrase: $reasonPhrase
         );
@@ -166,7 +166,7 @@ class CurlAdapter extends AbstractAdapter
         }
 
         $response = new Response(
-            $this->createStream(mb_substr($content, $headersSize), $headers['Content-Encoding'] ?? []),
+            $this->createStream(substr($content, $headersSize), $headers['Content-Encoding'] ?? []),
             curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
             $headers,
             $reasonPhrase ?? ''

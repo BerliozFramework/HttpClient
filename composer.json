@@ -23,7 +23,6 @@
   },
   "require": {
     "php": "^8.0",
-    "ext-mbstring": "*",
     "ext-zlib": "*",
     "berlioz/http-message": "^2.1",
     "elgigi/har-parser": "^1.0.0-beta3",

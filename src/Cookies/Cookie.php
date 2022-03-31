@@ -57,7 +57,7 @@ class Cookie
             $cookie->value = $cookieParsed['value'];
             $cookie->expires = $cookieParsed['expires'];
             $cookie->path = $cookieParsed['path'] ?? null;
-            $cookie->domain = $cookieParsed['domain'] ?? ($uri ? $uri->getHost() : null);
+            $cookie->domain = $cookieParsed['domain'] ?? $uri?->getHost();
             if (null === $cookie->domain) {
                 throw new HttpClientException(sprintf('Missing domain for cookie "%s"', $cookie->name));
             }
@@ -271,7 +271,7 @@ class Cookie
     {
         // Check domain
         if (!(empty($this->domain) || empty($uri->getHost()) || $this->domain == $uri->getHost())) {
-            if (substr($uri->getHost(), 0 - mb_strlen($this->domain)) != $this->domain) {
+            if (substr($uri->getHost(), 0 - strlen($this->domain)) != $this->domain) {
                 if (substr($this->domain, 1) != $uri->getHost()) {
                     return false;
                 }
@@ -284,12 +284,7 @@ class Cookie
         }
 
         // Not valid path?
-        if (!(empty($this->path) ||
-            substr(
-                $uri->getPath(),
-                0,
-                mb_strlen($this->path)
-            ) == $this->path)) {
+        if (!(empty($this->path) || str_starts_with($uri->getPath(), $this->path))) {
             return false;
         }
 
