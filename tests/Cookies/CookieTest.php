@@ -13,6 +13,7 @@
 namespace Berlioz\Http\Client\Tests\Cookies;
 
 use Berlioz\Http\Client\Cookies\Cookie;
+use Berlioz\Http\Message\Uri;
 use DateInterval;
 use DateTime;
 use PHPUnit\Framework\TestCase;
@@ -39,5 +40,24 @@ class CookieTest extends TestCase
             $cookie->getExpires()->format('Y-m-d H:i:s'),
             $dateTime->sub(new DateInterval('PT100S'))->format('Y-m-d H:i:s')
         );
+    }
+
+    public function testIsSame()
+    {
+        $cookie = Cookie::parse('foo=value; domain=getberlioz.com');
+
+        $this->assertTrue($cookie->isSame($cookie));
+        $this->assertTrue(
+            $cookie->isSame(
+                Cookie::parse(
+                    'foo=value2',
+                    Uri::createFromString('https://getberlioz.com')
+                )
+            )
+        );
+        $this->assertFalse($cookie->isSame(Cookie::parse('bar=value; domain=getberlioz.com')));
+        $this->assertFalse($cookie->isSame(Cookie::parse('foo=value; domain=getberlioz.com; path=/qux/')));
+        $this->assertFalse($cookie->isSame(Cookie::parse('foo=value; domain=gethectororm.com')));
+        $this->assertTrue($cookie->isSame(Cookie::parse('foo=value; domain=getberlioz.com; version=qux')));
     }
 }

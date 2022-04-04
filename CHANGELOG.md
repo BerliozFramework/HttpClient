@@ -10,9 +10,13 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - Write HAR file to a stream
 
+### Changed
+
+- `Cookie::isSame()` now compare only name, domain and path
+
 ### Removed
 
-- Dependency with mbstring
+- Dependency with mbstring 
 
 ## [2.0.0-beta3] - 2022-02-25
 

@@ -254,10 +254,7 @@ class Cookie
         return
             $this->getName() === $cookie->getName() &&
             $this->getDomain() === $cookie->getDomain() &&
-            $this->getPath() === $cookie->getPath() &&
-            $this->getVersion() === $cookie->getVersion() &&
-            $this->isHttpOnly() === $cookie->isHttpOnly() &&
-            $this->isSecure() === $cookie->isSecure();
+            $this->getPath() === $cookie->getPath();
     }
 
     /**
