@@ -80,7 +80,7 @@ abstract class AbstractAdapter implements AdapterInterface
 
         $stream = new Stream();
 
-        if (null === $content) {
+        if (empty($content)) {
             return $stream;
         }
 
@@ -92,7 +92,7 @@ abstract class AbstractAdapter implements AdapterInterface
 
             // Deflate
             if (in_array('deflate', $contentEncodingHeader)) {
-                $content = gzinflate(trim($content));
+                $content = gzinflate($content);
             }
         }
 

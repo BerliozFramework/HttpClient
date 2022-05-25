@@ -16,7 +16,12 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 ### Removed
 
-- Dependency with mbstring 
+- Dependency with mbstring
+
+### Fixed
+
+- Try to decode content if empty
+- Trimmed content before inflate failed
 
 ## [2.0.0-beta3] - 2022-02-25
 
