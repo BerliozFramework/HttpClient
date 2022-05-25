@@ -119,8 +119,7 @@ class CookiesManager implements IteratorAggregate, Countable
     public function addCookie(Cookie $cookie): static
     {
         foreach ($this->cookies as $aCookie) {
-            if ($aCookie->isSame($cookie)) {
-                $aCookie->update($cookie);
+            if (true === $aCookie->update($cookie)) {
                 return $this;
             }
         }

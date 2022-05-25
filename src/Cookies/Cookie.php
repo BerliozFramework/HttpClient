@@ -18,7 +18,8 @@ use Berlioz\Http\Client\Components\CookieParserTrait;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use DateTime;
 use DateTimeInterface;
-use ElGigi\HarParser\Entities\Cookie as HarCookie;
+use DateTimeZone;
+use ElGigi\HarParser\Entities as Har;
 use Exception;
 use Psr\Http\Message\UriInterface;
 
@@ -78,11 +79,11 @@ class Cookie
     /**
      * Create cookie from HAR cookie.
      *
-     * @param HarCookie $harCookie
+     * @param Har\Cookie $harCookie
      *
      * @return static
      */
-    public static function createFromHar(HarCookie $harCookie): static
+    public static function createFromHar(Har\Cookie $harCookie): static
     {
         $cookie = new Cookie();
         $cookie->name = $harCookie->getName();
@@ -124,6 +125,37 @@ class Cookie
      * __toString() PHP magic method.
      */
     public function __toString(): string
+    {
+        return $this->getResponseHeader();
+    }
+
+    /**
+     * Get request header string value.
+     *
+     * @return string
+     */
+    public function getRequestHeader(): string
+    {
+        $str = (string)$this;
+
+        null !== $this->expires &&
+        $str .= '; Expires=' . $this->expires->setTimezone(new DateTimeZone('GMT'))->format('r');
+        null !== $this->path && $str .= '; Path=' . $this->path;
+        null !== $this->domain && $str .= '; Domain=' . $this->domain;
+        null !== $this->version && $str .= '; Version=' . $this->version;
+        true === $this->httpOnly && $str .= '; HttpOnly';
+        true === $this->secure && $str .= '; Secure';
+        null !== $this->sameSite && $str .= '; SameSite=' . $this->sameSite;
+
+        return $str;
+    }
+
+    /**
+     * Get response header string value.
+     *
+     * @return string
+     */
+    public function getResponseHeader(): string
     {
         return $this->name . "=" . str_replace("\0", "%00", $this->value);
     }
@@ -258,6 +290,29 @@ class Cookie
     }
 
     /**
+     * Update cookie.
+     *
+     * @param Cookie $cookie
+     *
+     * @return bool
+     */
+    public function update(Cookie $cookie): bool
+    {
+        // Not same cookie, return false!
+        if (!$this->isSame($cookie)) {
+            return false;
+        }
+
+        $this->value = $cookie->value;
+        $this->expires = $cookie->expires;
+        $this->version = $cookie->version;
+        $this->httpOnly = $cookie->httpOnly;
+        $this->secure = $cookie->secure;
+
+        return true;
+    }
+
+    /**
      * Is valid for URI?
      *
      * @param UriInterface $uri
@@ -291,26 +346,5 @@ class Cookie
         }
 
         return true;
-    }
-
-    /**
-     * Update cookie.
-     *
-     * @param Cookie $cookie
-     *
-     * @return static
-     */
-    public function update(Cookie $cookie): Cookie
-    {
-        $this->name = $cookie->name;
-        $this->value = $cookie->value;
-        $this->expires = $cookie->expires;
-        $this->path = $cookie->path;
-        $this->domain = $cookie->domain;
-        $this->version = $cookie->version;
-        $this->httpOnly = $cookie->httpOnly;
-        $this->secure = $cookie->secure;
-
-        return $this;
     }
 }

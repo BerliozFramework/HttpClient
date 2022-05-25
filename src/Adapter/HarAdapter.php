@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client\Adapter;
 
 use Berlioz\Http\Client\Exception\HttpClientException;
-use Berlioz\Http\Client\Har\HarParser;
+use Berlioz\Http\Client\Har\HarHandler;
 use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Message\Uri;
 use ElGigi\HarParser\Entities\Entry;
@@ -27,14 +27,14 @@ class HarAdapter implements AdapterInterface
 {
     protected int $stack = -1;
     protected array $usedEntries = [];
-    protected HarParser $parser;
+    protected HarHandler $handler;
     protected ?Timings $timings = null;
 
     public function __construct(
         protected Log $har,
         protected bool $strict = false
     ) {
-        $this->parser = new HarParser();
+        $this->handler = new HarHandler();
     }
 
     /**
@@ -117,8 +117,8 @@ class HarAdapter implements AdapterInterface
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
         $entry = $this->getNextEntry($request);
-        $this->timings = $this->parser->getTimings($entry);
+        $this->timings = $this->handler->getTimings($entry);
 
-        return $this->parser->getHttpResponse($entry->getResponse());
+        return $this->handler->getHttpResponse($entry->getResponse());
     }
 }

@@ -60,4 +60,15 @@ class CookieTest extends TestCase
         $this->assertFalse($cookie->isSame(Cookie::parse('foo=value; domain=gethectororm.com')));
         $this->assertTrue($cookie->isSame(Cookie::parse('foo=value; domain=getberlioz.com; version=qux')));
     }
+
+    public function testUpdate()
+    {
+        $cookie = Cookie::parse('foo=value; domain=getberlioz.com; path=/qux/');
+
+        $this->assertFalse($cookie->update(Cookie::parse('bar=value; domain=getberlioz.com')));
+        $this->assertFalse($cookie->update(Cookie::parse('foo=value2; domain=getberlioz.com')));
+
+        $this->assertTrue($cookie->update(Cookie::parse('foo=value2; domain=getberlioz.com; path=/qux/')));
+        $this->assertEquals('value2', $cookie->getValue());
+    }
 }

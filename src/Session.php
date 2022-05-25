@@ -16,7 +16,7 @@ namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Client\Har\HarGenerator;
-use Berlioz\Http\Client\Har\HarParser;
+use Berlioz\Http\Client\Har\HarHandler;
 use Berlioz\Http\Client\History\History;
 use ElGigi\HarParser\Entities\Log;
 use ElGigi\HarParser\Exception\InvalidArgumentException;
@@ -43,7 +43,7 @@ class Session
      */
     public static function createFromHar(Log $har): static
     {
-        $harParser = new HarParser();
+        $harParser = new HarHandler();
 
         return $harParser->handle($har);
     }

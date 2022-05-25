@@ -13,6 +13,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 ### Changed
 
 - `Cookie::isSame()` now compare only name, domain and path
+- `HarParser` renamed to `HarHandler`
 
 ### Removed
 
@@ -22,6 +23,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - Try to decode content if empty
 - Trimmed content before inflate failed
+- Creation of request/response from `HarAdapter` use now cookies objects of har file instead of headers 
 
 ## [2.0.0-beta3] - 2022-02-25
 

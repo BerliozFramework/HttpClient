@@ -34,7 +34,7 @@ trait DefaultHeadersTrait
      */
     public function addDefaultHeaders(RequestInterface $request, ?array $defaultHeaders = null): RequestInterface
     {
-        foreach (($defaultHeaders ?? $this->defaultHeaders) as $name => $value ) {
+        foreach (($defaultHeaders ?? $this->defaultHeaders) as $name => $value) {
             if ($request->hasHeader($name)) {
                 continue;
             }
