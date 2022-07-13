@@ -14,6 +14,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - `Cookie::isSame()` now compare only name, domain and path
 - `HarParser` renamed to `HarHandler`
+- `HarAdapter` accept a path of HAR file in constructor argument
 
 ### Removed
 

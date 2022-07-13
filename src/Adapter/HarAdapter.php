@@ -20,20 +20,24 @@ use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Message\Uri;
 use ElGigi\HarParser\Entities\Entry;
 use ElGigi\HarParser\Entities\Log;
+use ElGigi\HarParser\Parser;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
 class HarAdapter implements AdapterInterface
 {
+    protected Log $har;
     protected int $stack = -1;
     protected array $usedEntries = [];
     protected HarHandler $handler;
     protected ?Timings $timings = null;
 
     public function __construct(
-        protected Log $har,
+        Log|string $har,
         protected bool $strict = false
     ) {
+        is_string($har) && $har = (new Parser())->parse($har, contentIsFile: true);
+        $this->har = $har;
         $this->handler = new HarHandler();
     }
 

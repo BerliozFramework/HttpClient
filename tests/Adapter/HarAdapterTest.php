@@ -21,6 +21,17 @@ use Psr\Http\Message\ResponseInterface;
 
 class HarAdapterTest extends TestCase
 {
+    public function testConstructWithString()
+    {
+        $adapter = new HarAdapter(
+            har: __DIR__ . '/../example.har',
+            strict: false,
+        );
+
+        $response = $adapter->sendRequest(new Request('GET', 'https://getberlioz.com/'));
+        $this->assertInstanceOf(ResponseInterface::class, $response);
+    }
+
     public function testGetName()
     {
         $adapter = new HarAdapter((new Parser())->parse(__DIR__ . '/../example.har', true));
