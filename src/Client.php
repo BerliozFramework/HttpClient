@@ -52,24 +52,38 @@ class Client implements ClientInterface, LoggerAwareInterface
      * @param array $options
      * @param AdapterInterface ...$adapter
      *
-     * @option string "baseUri"             Base of URI if not given in requests
-     * @option int    "followLocationLimit" Limit location to follow
-     * @option int    "sleepTime"           Sleep time between requests (ms) (default: 0)
-     * @option string "logFile"             Log file name (only file name, not path)
-     * @option bool   "exceptions"          Throw exceptions on error (default: true)
-     * @option array  "headers"             Default headers
+     * @option string "baseUri" Base of URI if not given in requests
+     * @option bool "followLocation" Follow redirections (default: true)
+     * @option int "followLocationLimit" Limit location to follow
+     * @option int "sleepTime" Sleep time between requests (ms) (default: 0)
+     * @option string "logFile" Log file name (only file name, not path)
+     * @option bool "exceptions" Throw exceptions on error (default: true)
+     * @option null|false|CookiesManager "cookies" NULL: to use default cookie manager; FALSE: to not use cookies; a CookieManager object to use
+     * @option callable "callback"  Callback after each request
+     * @option array  "headers" Default headers
      */
     public function __construct(protected array $options = [], AdapterInterface ...$adapter)
     {
         // Merge with default options
         $this->options = array_replace_recursive(
             [
+                // Base of URI for URI requests
                 'baseUri' => null,
+                // If client follow locations
                 'followLocation' => true,
+                // Follow location limit in case of infinite loop
                 'followLocationLimit' => 5,
+                // Sleep time between each request
                 'sleepTime' => 0,
+                // File where log requests/responses
                 'logFile' => null,
+                // Throw exceptions on HTTP error cases
                 'exceptions' => true,
+                // NULL: to use default cookie manager; FALSE: to not use cookies; a CookieManager object to use
+                'cookies' => null,
+                // Callback on each request
+                'callback' => null,
+                // Default headers
                 'headers' => [
                     'Accept' => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
                     'User-Agent' => ['BerliozBot/1.0'],

@@ -89,6 +89,21 @@ $response = $client->request('get', 'https://getberlioz.com');
 print $response->getBody();
 ```
 
+Each method accept an array of options with `$options` argument.
+List of options:
+
+- **baseUri** (string): Base of URI if not given in requests
+- **followLocation** (bool): Follow redirections (default: true)
+- **followLocationLimit** (int): Limit location to follow
+- **sleepTime** (int): Sleep time between requests (ms) (default: 0)
+- **logFile** (string): Log file name (only file name, not path)
+- **exceptions** (bool): Throw exceptions on error (default: true)
+- **cookies** (null|false|CookiesManager): NULL: to use default cookie manager; FALSE: to not use cookies; a CookieManager object to use
+- **callback** (callable):  Callback after each request
+- **headers** (array): Default headers
+
+Options passed in argument replace default options of client.
+
 ### Session
 
 The session is accessible with method `Client::getSession()`.
@@ -117,7 +132,7 @@ If you serialize the object `Session`, the cookies are preserves.
 
 HAR file of session is accessible with method `Session::getHar()`.
 
-If you serialize the object `Session`, the HAR is preserve.
+If you serialize the object `Session`, the HAR is preserved.
 
 Refers to the documentation of **elgigi/har-parser** library: https://github.com/ElGigi/HarParser
 
@@ -145,7 +160,7 @@ use Berlioz\Http\Client\Client;
 use Berlioz\Http\Client\Adapter;
 
 $client = new Client(adapter: new Adapter\CurlAdapter(), adapter: new Adapter\StreamAdapter());
-$client->get('https://getberlioz.com', options: ['adapter' => 'stream'])
+$client->get('https://getberlioz.com', options: ['adapter' => 'stream']);
 ```
 
 #### List
@@ -154,6 +169,28 @@ List of adapters:
 
 - **curl**: `Berlioz\Http\Client\Adapter\CurlAdapter`
 - **stream**: `Berlioz\Http\Client\Adapter\StreamAdapter`
+- **har**: `Berlioz\Http\Client\Adapter\HarAdapter`
+
+#### HarAdapter
+
+The `HarAdapter` is specially made to simulate a navigation, coming from a desktop browser for example.
+
+It's very useful for test units. You only need to store your cleaned HAR file into your repository to launch tests with
+simulated HTTP dialogs.
+
+```php
+use Berlioz\Http\Client\Client;
+use Berlioz\Http\Client\Adapter\HarAdapter;
+use ElGigi\HarParser\Parser;
+
+// Create HAR object from library `elgigi/har-parser`
+$har = (new Parser())->parse('/path/of/my/file.har', contentIsFile: true);
+
+$client = new Client(adapter: new HarAdapter(har: $har));
+$client->get('https://getberlioz.com'); // Get response from HAR object, without making an HTTP request
+```
+
+Har adapter accept an option `strict` (default: `false`) to force the way of navigation.
 
 #### Create an adapter
 
