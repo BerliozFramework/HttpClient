@@ -27,10 +27,15 @@ if ($redirect = (int)($_GET['redirect'] ?? 0)) {
     exit;
 }
 
+switch ($_GET['test'] ?? null) {
+    case 'encoded_http_reason':
+        header(utf8_decode('HTTP/1.1 200 Requête OK'));
+        break;
+}
+
 if ($_GET['encoding'] ?? null) {
     header('Content-Encoding:' . $_GET['encoding']);
 }
-
 
 print match ($_GET['encoding'] ?? null) {
     'gzip' => gzencode($contents),

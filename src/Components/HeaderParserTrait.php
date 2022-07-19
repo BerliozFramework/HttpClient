@@ -23,17 +23,17 @@ trait HeaderParserTrait
      * Parse headers.
      *
      * @param string $headers Raw headers
-     * @param mixed|null $protocolVersion
+     * @param string|null $protocolVersion
      * @param mixed|null $statusCode
-     * @param mixed|null $reasonPhrase Reason phrase returned by reference
+     * @param string|null $reasonPhrase Reason phrase returned by reference
      *
      * @return array
      */
     protected function parseHeaders(
         string $headers,
-        mixed &$protocolVersion = null,
-        mixed &$statusCode = null,
-        mixed &$reasonPhrase = null
+        ?string &$protocolVersion = null,
+        ?int &$statusCode = null,
+        ?string &$reasonPhrase = null
     ): array {
         $finalHeaders = [];
 
@@ -77,7 +77,7 @@ trait HeaderParserTrait
         if (preg_match("#^HTTP/([0-9.]+) ([0-9]+) (.*)$#i", $firstHeader, $matches) === 1) {
             $protocolVersion = $matches[1];
             $statusCode = (int)$matches[2];
-            $reasonPhrase = $matches[3];
+            $reasonPhrase = utf8_encode($matches[3]);
         }
 
         return $finalHeaders;

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.0.0-beta5] - In progress
+
+### Fixed
+
+- HTTP reason not encoded in UTF8 from response
+
 ## [2.0.0-beta4] - 2022-07-13
 
 ### Added

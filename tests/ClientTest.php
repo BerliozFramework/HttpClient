@@ -53,6 +53,15 @@ class ClientTest extends TestCase
         $this->assertEquals('GET', $bodyExploded[0]);
     }
 
+    public function testGet_encodedHttpReason()
+    {
+        $uri = new Uri('http', 'localhost', 8080, '/request.php?test=encoded_http_reason');
+        $client = new Client();
+        $response = $client->get($uri);
+
+        $this->assertEquals('Requête OK', $response->getReasonPhrase());
+    }
+
     public function testGet_tooManyRedirection()
     {
         $this->expectException(RequestException::class);
