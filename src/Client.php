@@ -342,18 +342,21 @@ class Client implements ClientInterface, LoggerAwareInterface, Serializable
                 // Body
                 $stream = new Stream();
                 $streamData = substr($content, curl_getinfo($ch, CURLINFO_HEADER_SIZE));
-                if (isset($headers['Content-Encoding'])) {
-                    // Gzip
-                    if (in_array('gzip', $headers['Content-Encoding'])) {
-                        $streamData = gzdecode($streamData);
+                if (!empty($streamData)) {
+                    if (isset($headers['Content-Encoding'])) {
+                        // Gzip
+                        if (in_array('gzip', $headers['Content-Encoding'])) {
+                            $streamData = gzdecode($streamData);
+                        }
+
+                        // Deflate
+                        if (in_array('deflate', $headers['Content-Encoding'])) {
+                            $streamData = gzinflate($streamData);
+                        }
                     }
 
-                    // Deflate
-                    if (in_array('deflate', $headers['Content-Encoding'])) {
-                        $streamData = gzinflate(trim($streamData));
-                    }
+                    $stream->write($streamData);
                 }
-                $stream->write((string)$streamData);
 
                 // Construct object
                 $response = new Response(
