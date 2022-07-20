@@ -77,7 +77,10 @@ trait HeaderParserTrait
         if (preg_match("#^HTTP/([0-9.]+) ([0-9]+) (.*)$#i", $firstHeader, $matches) === 1) {
             $protocolVersion = $matches[1];
             $statusCode = (int)$matches[2];
-            $reasonPhrase = utf8_encode($matches[3]);
+            $reasonPhrase = $matches[3];
+            if (false === mb_check_encoding($reasonPhrase, 'utf-8')) {
+                $reasonPhrase = utf8_encode($reasonPhrase);
+            }
         }
 
         return $finalHeaders;
