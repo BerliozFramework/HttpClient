@@ -29,7 +29,8 @@ if ($redirect = (int)($_GET['redirect'] ?? 0)) {
 
 switch ($_GET['test'] ?? null) {
     case 'encoded_http_reason':
-        header(utf8_decode('HTTP/1.1 200 Requête OK'));
+        $reason = 'HTTP/1.1 200 Requête OK';
+        header(mb_convert_encoding($reason, 'ISO-8859-1', mb_detect_encoding($reason)));
         break;
 }
 

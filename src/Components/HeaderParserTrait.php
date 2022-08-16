@@ -78,8 +78,8 @@ trait HeaderParserTrait
             $protocolVersion = $matches[1];
             $statusCode = (int)$matches[2];
             $reasonPhrase = $matches[3];
-            if (false === mb_check_encoding($reasonPhrase, 'utf-8')) {
-                $reasonPhrase = utf8_encode($reasonPhrase);
+            if (false === mb_check_encoding($reasonPhrase, 'UTF-8')) {
+                $reasonPhrase = mb_convert_encoding($reasonPhrase, 'UTF-8', 'ISO-8859-1');
             }
         }
 
