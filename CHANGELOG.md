@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.0.0-beta6] - In progress
+
+### Added
+
+- `Options` class to manage options of client
+- `HttpContext` class to pass context to adapters
+- 'context' option to personalize Proxy/SSL/... options of adapters
+
+### Changed
+
+- Signature of `AdapterInterface::sendRequest()` method
+- Adapters accept context to personalize Proxy/SSL/... options 
+
 ## [2.0.0-beta5] - 2022-09-07
 
 ### Fixed

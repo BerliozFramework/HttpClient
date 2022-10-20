@@ -17,6 +17,7 @@ namespace Berlioz\Http\Client\Adapter;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Har\HarHandler;
 use Berlioz\Http\Client\History\Timings;
+use Berlioz\Http\Client\HttpContext;
 use Berlioz\Http\Message\Uri;
 use ElGigi\HarParser\Entities\Entry;
 use ElGigi\HarParser\Entities\Log;
@@ -118,7 +119,7 @@ class HarAdapter implements AdapterInterface
      * @inheritDoc
      * @throws HttpClientException
      */
-    public function sendRequest(RequestInterface $request): ResponseInterface
+    public function sendRequest(RequestInterface $request, ?HttpContext $context = null): ResponseInterface
     {
         $entry = $this->getNextEntry($request);
         $this->timings = $this->handler->getTimings($entry);

@@ -15,7 +15,10 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client\Adapter;
 
 use Berlioz\Http\Client\History\Timings;
+use Berlioz\Http\Client\HttpContext;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Interface AdapterInterface.
@@ -35,4 +38,11 @@ interface AdapterInterface extends ClientInterface
      * @return Timings|null
      */
     public function getTimings(): ?Timings;
+
+    /**
+     * @inheritDoc
+     *
+     * @param HttpContext|null $context
+     */
+    public function sendRequest(RequestInterface $request, ?HttpContext $context = null): ResponseInterface;
 }

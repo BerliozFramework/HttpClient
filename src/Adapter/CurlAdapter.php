@@ -19,7 +19,9 @@ use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\History\Timings;
+use Berlioz\Http\Client\HttpContext;
 use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\Uri;
 use CurlHandle;
 use DateTimeImmutable;
 use Psr\Http\Message\RequestInterface;
@@ -97,10 +99,10 @@ class CurlAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function sendRequest(RequestInterface $request): ResponseInterface
+    public function sendRequest(RequestInterface $request, HttpContext $context = null): ResponseInterface
     {
         // Init CURL
-        $ch = $this->initCurl($request);
+        $ch = $this->initCurl($request, $context);
 
         // Execute CURL request
         $dateTime = new DateTimeImmutable();
@@ -179,10 +181,11 @@ class CurlAdapter extends AbstractAdapter
      * Init CURL options.
      *
      * @param RequestInterface $request
+     * @param HttpContext|null $context
      *
      * @return CurlHandle
      */
-    protected function initCurl(RequestInterface $request): CurlHandle
+    protected function initCurl(RequestInterface $request, ?HttpContext $context = null): CurlHandle
     {
         // CURL init
         $ch = curl_init();
@@ -219,8 +222,34 @@ class CurlAdapter extends AbstractAdapter
             curl_setopt($ch, CURLOPT_POSTFIELDS, (string)$request->getBody());
         }
 
-        // Set user options
-        curl_setopt_array($ch, $this->options);
+        // HTTP Context
+        if (null !== $context) {
+            $contextOptions = [];
+
+            $contextOptions[CURLOPT_HTTPPROXYTUNNEL] = $context->proxy !== false;
+            if (false !== $context->proxy) {
+                $proxyUri = Uri::createFromString($context->proxy);
+                $contextOptions[CURLOPT_PROXY] = sprintf(
+                    '%s:%d',
+                    $proxyUri->getHost(),
+                    $proxyUri->getPort() ?? ($proxyUri->getScheme() == 'http' ? 80 : 443)
+                );
+                $contextOptions[CURLOPT_PROXYUSERPWD] = $proxyUri->getUserInfo() ?: null;
+            }
+
+            $contextOptions[CURLOPT_SSL_VERIFYPEER] = $context->ssl_verify_peer;
+            $contextOptions[CURLOPT_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
+            $contextOptions[CURLOPT_PROXY_SSL_VERIFYPEER] = $context->ssl_verify_peer;
+            $contextOptions[CURLOPT_PROXY_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
+            $contextOptions[CURLOPT_CAINFO] = $context->ssl_cafile;
+            $contextOptions[CURLOPT_CAPATH] = $context->ssl_capath;
+            $contextOptions[CURLOPT_SSL_CIPHER_LIST] = $context->ssl_ciphers;
+            $contextOptions[CURLOPT_SSLCERT] = $context->ssl_local_cert;
+            $contextOptions[CURLOPT_SSLCERTPASSWD] = $context->ssl_local_cert_passphrase;
+            $contextOptions[CURLOPT_SSLKEY] = $context->ssl_local_pk;
+
+            curl_setopt_array($ch, array_filter($contextOptions, fn($value) => null !== $value));
+        }
 
         return $ch;
     }

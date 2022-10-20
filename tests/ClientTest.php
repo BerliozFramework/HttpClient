@@ -15,7 +15,11 @@ namespace Berlioz\Http\Client\Tests;
 use Berlioz\Http\Client\Client;
 use Berlioz\Http\Client\Exception\HttpException;
 use Berlioz\Http\Client\Exception\RequestException;
+use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Client\Options;
+use Berlioz\Http\Client\Tests\Adapter\FakeAdapter;
 use Berlioz\Http\Message\Request;
+use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream\MemoryStream;
 use Berlioz\Http\Message\Uri;
 use Exception;
@@ -75,7 +79,7 @@ class ClientTest extends TestCase
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php?redirect=10');
         $client = new Client();
-        $response = $client->get($uri, options: ['followLocationLimit' => 10]);
+        $response = $client->get($uri, options: ['followLocation' => 10]);
 
         $this->assertEquals(200, $response->getStatusCode());
     }
@@ -376,7 +380,7 @@ class ClientTest extends TestCase
 
         $this->assertFalse($request->hasHeader('Content-Length'));
 
-        $request = $reflection->invoke($client, $request);
+        $request = $reflection->invoke($client, $request, null, new Options());
 
         $this->assertTrue($request->hasHeader('Content-Length'));
         $this->assertEquals(['3'], $request->getHeader('Content-Length'));
@@ -397,9 +401,50 @@ class ClientTest extends TestCase
 
         $this->assertTrue($request->hasHeader('Content-Length'));
 
-        $request = $reflection->invoke($client, $request);
+        $request = $reflection->invoke($client, $request, null, new Options());
 
         $this->assertTrue($request->hasHeader('Content-Length'));
         $this->assertEquals(['10'], $request->getHeader('Content-Length'));
+    }
+
+    public function testGetOptions()
+    {
+        $client = new Client(['baseUri' => 'https://getberlioz.com']);
+        $this->assertInstanceOf(Options::class, $client->getOptions());
+        $this->assertEquals('https://getberlioz.com', $client->getOptions()->baseUri);
+    }
+
+    public function testContext()
+    {
+        $test = function ($request, $context) {
+            $this->assertEquals(
+                new HttpContext(proxy: 'my_proxy', ssl_verify_peer: false),
+                $context,
+            );
+
+            return new Response();
+        };
+        $client = new Client(
+            options: ['context' => new HttpContext(proxy: 'my_proxy', ssl_verify_peer: false)],
+            adapter: new FakeAdapter($test),
+        );
+        $client->get('');
+    }
+
+    public function testContextInherit()
+    {
+        $test = function ($request, $context) {
+            $this->assertEquals(
+                new HttpContext(proxy: 'my_proxy', ssl_verify_peer: true),
+                $context,
+            );
+
+            return new Response();
+        };
+        $client = new Client(
+            options: ['context' => new HttpContext(proxy: 'my_proxy', ssl_verify_peer: false)],
+            adapter: new FakeAdapter($test),
+        );
+        $client->get('', options: ['context' => ['ssl_verify_peer' => true]]);
     }
 }

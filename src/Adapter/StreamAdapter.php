@@ -17,7 +17,9 @@ namespace Berlioz\Http\Client\Adapter;
 use Berlioz\Http\Client\Components\HeaderParserTrait;
 use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\History\Timings;
+use Berlioz\Http\Client\HttpContext;
 use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\Uri;
 use DateTimeImmutable;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -28,14 +30,6 @@ use Psr\Http\Message\ResponseInterface;
 class StreamAdapter extends AbstractAdapter
 {
     use HeaderParserTrait;
-
-    /** @var resource */
-    private $context;
-
-    public function __construct(protected array $options = [])
-    {
-        $this->context = stream_context_create($this->options);
-    }
 
     /**
      * @inheritDoc
@@ -48,13 +42,13 @@ class StreamAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function sendRequest(RequestInterface $request): ResponseInterface
+    public function sendRequest(RequestInterface $request, ?HttpContext $context = null): ResponseInterface
     {
         $dateTime = new DateTimeImmutable();
         $initTime = microtime(true);
 
         // Create socket
-        $fp = $this->createSocketClient($request);
+        $fp = $this->createSocketClient($request, $context);
 
         $connectTime = microtime(true) - $initTime;
 
@@ -84,14 +78,64 @@ class StreamAdapter extends AbstractAdapter
     }
 
     /**
+     * Create stream context.
+     *
+     * @param HttpContext|null $context
+     *
+     * @return resource
+     */
+    protected function createContext(?HttpContext $context = null)
+    {
+        $contextOptions = [];
+        $contextOptions['http']['follow_location'] = false;
+
+        // HTTP Context
+        if (null !== $context) {
+            $contextOptions['http']['proxy'] = null;
+
+            if (false !== $context->proxy) {
+                $proxyUri = Uri::createFromString($context->proxy);
+
+                $contextOptions['http']['proxy'] = sprintf(
+                    '%s:%d',
+                    $proxyUri->getHost(),
+                    $proxyUri->getPort() ?? ($proxyUri->getScheme() == 'http' ? 80 : 443)
+                );
+                $contextOptions['http']['request_fulluri'] = true;
+
+                if ($proxyUri->getUserInfo()) {
+                    $contextOptions['http']['header'] = sprintf(
+                        'Authorization: Basic %s',
+                        base64_encode($proxyUri->getUserInfo())
+                    );
+                }
+            }
+
+            $contextOptions['ssl']['verify_peer'] = $context->ssl_verify_peer;
+            $contextOptions['ssl']['verify_peer_name'] = $context->ssl_verify_host;
+            $contextOptions['ssl']['allow_self_signed'] = !$context->ssl_verify_peer;
+            $contextOptions['ssl']['cafile'] = $context->ssl_cafile;
+            $contextOptions['ssl']['capath'] = $context->ssl_capath;
+            $contextOptions['ssl']['local_cert'] = $context->ssl_local_cert;
+            $contextOptions['ssl']['local_cert_passphrase'] = $context->ssl_local_cert_passphrase;
+            $contextOptions['ssl']['local_pk'] = $context->ssl_local_pk;
+            $contextOptions['ssl']['ciphers'] = $context->ssl_ciphers;
+            $contextOptions['ssl'] = array_filter($contextOptions['ssl'], fn($value) => null !== $value);
+        }
+
+        return stream_context_create($contextOptions);
+    }
+
+    /**
      * Create socket client.
      *
      * @param RequestInterface $request
+     * @param HttpContext|null $context
      *
      * @return resource
      * @throws NetworkException
      */
-    protected function createSocketClient(RequestInterface $request)
+    protected function createSocketClient(RequestInterface $request, ?HttpContext $context = null)
     {
         $wrapper = match ($request->getUri()->getScheme()) {
             'http' => 'tcp',
@@ -106,7 +150,7 @@ class StreamAdapter extends AbstractAdapter
             address: $address = sprintf('%s://%s:%d', $wrapper, $request->getUri()->getHost(), $port),
             error_code: $errno,
             error_message: $errstr,
-            context: $this->context,
+            context: $this->createContext($context),
         );
 
         if (false === $fp) {

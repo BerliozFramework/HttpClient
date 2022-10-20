@@ -60,8 +60,8 @@ trait LogTrait
         }
 
         // Log all detail to file ?
-        if (!empty($this->options['logFile'])) {
-            if (is_resource($this->logFp) || is_resource($this->logFp = @fopen($this->options['logFile'], 'a'))) {
+        if (!empty($this->options->logFile)) {
+            if (is_resource($this->logFp) || is_resource($this->logFp = @fopen($this->options->logFile, 'a'))) {
                 $str =
                     '###### ' . date('c') . ' ######' . PHP_EOL . PHP_EOL .
                     '>>>>>> Request' . PHP_EOL . PHP_EOL .
