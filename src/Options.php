@@ -16,7 +16,6 @@ namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Cookies\CookiesManager;
 use Closure;
-use InvalidArgumentException;
 
 class Options
 {
@@ -94,11 +93,7 @@ class Options
      */
     public function __get(string $name): mixed
     {
-        if (!array_key_exists($name, $this->userDefined)) {
-            throw new InvalidArgumentException(sprintf('User option "%s" does not exists', $name));
-        }
-
-        return $this->userDefined[$name];
+        return $this->userDefined[$name] ?? null;
     }
 
     /**

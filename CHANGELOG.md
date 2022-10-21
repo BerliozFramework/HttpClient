@@ -16,6 +16,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - Signature of `AdapterInterface::sendRequest()` method
 - Adapters accept context to personalize Proxy/SSL/... options 
+- Undefined option returns NULL instead of exception 
 
 ## [2.0.0-beta5] - 2022-09-07
 

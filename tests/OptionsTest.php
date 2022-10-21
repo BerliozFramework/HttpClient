@@ -17,6 +17,21 @@ use PHPUnit\Framework\TestCase;
 
 class OptionsTest extends TestCase
 {
+    public function testGet_userDefined()
+    {
+        $options = new Options();
+        $options->value = 'foo';
+
+        $this->assertEquals('foo', $options->value);
+    }
+
+    public function testGet_undefined()
+    {
+        $options = new Options();
+
+        $this->assertNull($options->undefined);
+    }
+
     public function testMake_Options()
     {
         $options = new Options();
