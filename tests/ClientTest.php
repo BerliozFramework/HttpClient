@@ -273,7 +273,7 @@ class ClientTest extends TestCase
                 $defaultHeaders,
                 [
                     'Header1' => ['Value2', 'Value1'],
-                    'Host' => ['localhost'],
+                    'Host' => ['localhost:8080'],
                     'Content-Length' => [0]
                 ]
             ),
