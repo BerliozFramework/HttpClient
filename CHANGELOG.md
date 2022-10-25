@@ -15,8 +15,9 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 ### Changed
 
 - Signature of `AdapterInterface::sendRequest()` method
-- Adapters accept context to personalize Proxy/SSL/... options 
-- Undefined option returns NULL instead of exception 
+- Adapters accept context to personalize Proxy/SSL/... options
+- Undefined option returns NULL instead of exception
+- Force string cast in `HarGenerator` headers
 
 ### Fixed
 
@@ -48,7 +49,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - Try to decode content if empty
 - Trimmed content before inflate failed
-- Creation of request/response from `HarAdapter` use now cookies objects of har file instead of headers 
+- Creation of request/response from `HarAdapter` use now cookies objects of har file instead of headers
 
 ## [2.0.0-beta3] - 2022-02-25
 

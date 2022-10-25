@@ -273,7 +273,7 @@ class HarGenerator
 
         foreach ($message->getHeaders() as $name => $headers) {
             foreach ($headers as $value) {
-                $final[] = new Har\Header(name: $name, value: $value);
+                $final[] = new Har\Header(name: (string)$name, value: (string)$value);
             }
         }
 
