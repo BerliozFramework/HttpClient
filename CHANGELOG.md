@@ -18,6 +18,10 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - Adapters accept context to personalize Proxy/SSL/... options 
 - Undefined option returns NULL instead of exception 
 
+### Fixed
+
+- Normalize headers in options
+
 ## [2.0.0-beta5] - 2022-09-07
 
 ### Fixed

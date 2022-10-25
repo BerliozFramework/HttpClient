@@ -72,7 +72,10 @@ class Options
 
             foreach ($options as $key => $value) {
                 $new->$key = match ($key) {
-                    'headers' => array_replace($new->headers, (array)$value),
+                    'headers' => array_replace(
+                        self::normalizeHeaders($new->headers),
+                        self::normalizeHeaders((array)$value),
+                    ),
                     'context' => HttpContext::make($value, $new->context),
                     default => $value
                 };
@@ -107,5 +110,26 @@ class Options
     public function __set(string $name, mixed $value): void
     {
         $this->userDefined[$name] = $value;
+    }
+
+    /**
+     * Normalize headers.
+     *
+     * @param array $headers
+     *
+     * @return array
+     */
+    private static function normalizeHeaders(array $headers): array
+    {
+        $final = [];
+
+        foreach ($headers as $name => $value) {
+            $name = ucwords(strtolower($name), ' -_');
+            $final[$name] = (array)$value;
+        }
+
+        array_walk_recursive($final, fn(&$value) => $value = (string)$value);
+
+        return $final;
     }
 }

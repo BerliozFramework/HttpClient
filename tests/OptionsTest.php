@@ -67,13 +67,14 @@ class OptionsTest extends TestCase
             [
                 'headers' => [
                     'Foo' => ['FooValue1', 'FooValue2'],
-                    'Bar' => ['BarValue1', 'BarValue2'],
+                    'bar' => ['BarValue1', 'BarValue2'],
                     'Qux' => ['QuxValue1'],
                 ]
             ]
         );
         $options2 = Options::make(['headers' => ['Bar' => ['NewBarValue']]], $options);
 
+        $this->assertArrayNotHasKey('bar', $options->headers);
         $this->assertEquals(
             array_replace(
                 $options->headers,
