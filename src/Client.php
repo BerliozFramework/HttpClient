@@ -291,7 +291,12 @@ class Client implements ClientInterface, LoggerAwareInterface
             $request = $this->prepareRequest(
                 new Request(Request::HTTP_METHOD_GET, Uri::create($redirectUri, $request->getUri())),
                 $cookies,
-                Options::make(['headers' => ['Referer' => (string)$request->getUri()]], $options),
+                Options::make([
+                    'headers' => [
+                        'Referer' => (string)$request->getUri(),
+                        'Content-Type' => [],
+                    ]
+                ], $options),
             );
         } while ($followLocation);
 

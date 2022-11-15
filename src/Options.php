@@ -119,17 +119,29 @@ class Options
      *
      * @return array
      */
-    private static function normalizeHeaders(array $headers): array
+    public static function normalizeHeaders(array $headers): array
     {
         $final = [];
 
         foreach ($headers as $name => $value) {
-            $name = ucwords(strtolower($name), ' -_');
+            $name = static::normalizeHeaderName($name);
             $final[$name] = (array)$value;
         }
 
         array_walk_recursive($final, fn(&$value) => $value = (string)$value);
 
         return $final;
+    }
+
+    /**
+     * Normalize headers.
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public static function normalizeHeaderName(string $name): string
+    {
+        return ucwords(strtolower($name), ' -_');
     }
 }

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Berlioz\Http\Client\Components;
 
+use Berlioz\Http\Client\Options;
 use Psr\Http\Message\RequestInterface;
 
 /**
@@ -66,12 +67,15 @@ trait DefaultHeadersTrait
     public function setDefaultHeaders(array $headers, bool $erase = true): static
     {
         if ($erase) {
-            $this->defaultHeaders = $headers;
+            $this->defaultHeaders = Options::normalizeHeaders($headers);
 
             return $this;
         }
 
-        $this->defaultHeaders = array_merge($this->defaultHeaders, $headers);
+        $this->defaultHeaders = array_merge(
+            Options::normalizeHeaders($this->defaultHeaders),
+            Options::normalizeHeaders($headers)
+        );
 
         return $this;
     }
@@ -85,6 +89,8 @@ trait DefaultHeadersTrait
      */
     public function getDefaultHeader(string $name): array
     {
+        $name = Options::normalizeHeaderName($name);
+
         return $this->defaultHeaders[$name] ?? [];
     }
 
@@ -99,6 +105,8 @@ trait DefaultHeadersTrait
      */
     public function setDefaultHeader(string $name, string $value, bool $erase = true): static
     {
+        $name = Options::normalizeHeaderName($name);
+
         if ($erase || !isset($this->defaultHeaders[$name])) {
             unset($this->defaultHeaders[$name]);
         }

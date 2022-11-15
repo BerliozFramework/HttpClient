@@ -22,6 +22,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 ### Fixed
 
 - Normalize headers in options
+- Normalize default headers
 
 ## [2.0.0-beta5] - 2022-09-07
 
