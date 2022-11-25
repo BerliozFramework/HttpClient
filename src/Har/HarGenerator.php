@@ -187,12 +187,18 @@ class HarGenerator
             ),
             headers: $this->getHeaders($request),
             queryString: array_map(
-                function ($value) {
-                    $value = explode('=', $value, 2);
+                function ($queryValue) {
+                    $queryValue = explode('=', $queryValue, 2);
+                    $key = $queryValue[0];
+                    $value = urldecode($queryValue[1] ?? '');
 
-                    return new Har\QueryString($value[0], urldecode($value[1] ?? ''));
+                    if (false === mb_check_encoding($value, 'UTF-8')) {
+                        $value = mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
+                    }
+
+                    return new Har\QueryString($key, $value);
                 },
-                explode(ini_get('arg_separator.output'), $request->getUri()->getQuery())
+                explode('&', $request->getUri()->getQuery())
             ),
             postData: $postData ?? null,
             headersSize: -1,
