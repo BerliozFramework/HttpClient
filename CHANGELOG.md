@@ -19,6 +19,10 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - Undefined option returns NULL instead of exception
 - Force string cast in `HarGenerator` headers
 
+### Removed
+
+- Remove deprecated default header "Accept-Charset"
+
 ### Fixed
 
 - Normalize headers in options

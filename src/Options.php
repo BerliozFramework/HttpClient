@@ -46,7 +46,6 @@ class Options
             'User-Agent' => ['Berlioz Client/2.0'],
             'Accept-Language' => ['fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'],
             'Accept-Encoding' => ['gzip, deflate'],
-            'Accept-Charset' => ['ISO-8859-1,utf-8;q=0.7,*;q=0.7'],
             'Connection' => ['close'],
         ],
         public ?HttpContext $context = null,
