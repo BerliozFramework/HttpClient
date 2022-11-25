@@ -54,19 +54,19 @@ trait HeaderParserTrait
         $headers = array_filter($headers);
 
         foreach ($headers as $header) {
-            $header[0] = ucwords($header[0], '-');
-            $header[1] = $header[1] ?? null;
+            $name = ucwords($header[0], '-');
+            $value = $header[1] ?? null;
 
-            if (null === $header[1]) {
+            if (null === $value) {
                 continue;
             }
 
-            if (!isset($finalHeaders[$header[0]])) {
-                $finalHeaders[$header[0]] = [$header[1]];
-                continue;
+            if (false === mb_check_encoding($value, 'UTF-8')) {
+                $value = mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
             }
 
-            $finalHeaders[$header[0]][] = $header[1];
+            $finalHeaders[$name] ??= [];
+            $finalHeaders[$name][] = $value;
         }
 
         // Treat first header
