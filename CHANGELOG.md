@@ -23,6 +23,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 - Normalize headers in options
 - Normalize default headers
+- Non-utf8 header value
 
 ## [2.0.0-beta5] - 2022-09-07
 
