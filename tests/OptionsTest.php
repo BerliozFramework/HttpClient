@@ -67,7 +67,7 @@ class OptionsTest extends TestCase
             [
                 'headers' => [
                     'Foo' => ['FooValue1', 'FooValue2'],
-                    'bar' => ['BarValue1', 'BarValue2'],
+                    'bar' => $expected = ['BarValue1', 'BarValue2'],
                     'Qux' => ['QuxValue1'],
                 ]
             ]
@@ -84,5 +84,7 @@ class OptionsTest extends TestCase
             ),
             $options2->headers
         );
+        $this->assertEquals(['NewBarValue'], $options2->headers['Bar']);
+        $this->assertEquals($expected, $options->headers['Bar']);
     }
 }

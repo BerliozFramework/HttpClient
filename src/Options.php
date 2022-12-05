@@ -19,6 +19,13 @@ use Closure;
 
 class Options
 {
+    private const DEFAULT_HEADERS = [
+        'Accept' => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
+        'User-Agent' => ['Berlioz Client/2.0'],
+        'Accept-Language' => ['fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'],
+        'Accept-Encoding' => ['gzip, deflate'],
+        'Connection' => ['close'],
+    ];
     private array $userDefined;
 
     public function __construct(
@@ -41,13 +48,7 @@ class Options
         // Callback on exception
         public ?Closure $callbackException = null,
         // Default headers
-        public array $headers = [
-            'Accept' => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
-            'User-Agent' => ['Berlioz Client/2.0'],
-            'Accept-Language' => ['fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3'],
-            'Accept-Encoding' => ['gzip, deflate'],
-            'Connection' => ['close'],
-        ],
+        public array $headers = self::DEFAULT_HEADERS,
         public ?HttpContext $context = null,
         ...$userDefined,
     ) {
@@ -67,7 +68,19 @@ class Options
 
         // Array of options
         if (is_array($options)) {
-            $new = null !== $initial ? clone $initial : new self();
+            $new = new self(
+                adapter: $initial?->adapter,
+                baseUri: $initial?->baseUri,
+                followLocation: $initial?->followLocation ?? 5,
+                sleepTime: $initial?->sleepTime ?? 0,
+                logFile: $initial?->logFile,
+                exceptions: $initial?->exceptions ?? true,
+                cookies: $initial?->cookies,
+                callback: $initial?->callback,
+                callbackException: $initial?->callbackException,
+                headers: $initial?->headers ?? self::DEFAULT_HEADERS,
+                context: $initial?->context ? clone $initial->context : null,
+            );
 
             foreach ($options as $key => $value) {
                 $new->$key = match ($key) {
@@ -128,6 +141,7 @@ class Options
         }
 
         array_walk_recursive($final, fn(&$value) => $value = (string)$value);
+        unset($value);
 
         return $final;
     }

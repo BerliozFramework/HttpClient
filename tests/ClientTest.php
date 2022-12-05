@@ -97,6 +97,15 @@ class ClientTest extends TestCase
         );
     }
 
+    public function testGet_withHeaders()
+    {
+        $uri = new Uri('http', 'localhost', 8080, '/request.php');
+        $client = new Client();
+        $client->get($uri, options: ['headers' => ['Foo' => 'FooHeader']]);
+
+        $this->assertArrayNotHasKey('Foo', $client->getOptions()->headers);
+    }
+
     public function testPost()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php');

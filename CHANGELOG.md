@@ -29,6 +29,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - Normalize default headers
 - Non-utf8 header value for HAR generation
 - Non-utf8 querystring value for HAR generation
+- Bug with clone method of PHP
 
 ## [2.0.0-beta5] - 2022-09-07
 

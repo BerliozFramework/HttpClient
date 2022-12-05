@@ -26,7 +26,7 @@
     "ext-mbstring": "*",
     "ext-zlib": "*",
     "berlioz/http-message": "^2.1",
-    "elgigi/har-parser": "^1.0.0-beta3",
+    "elgigi/har-parser": "^1.0.0-beta5",
     "psr/http-client": "^1.0",
     "psr/log": "^1.0"
   },
