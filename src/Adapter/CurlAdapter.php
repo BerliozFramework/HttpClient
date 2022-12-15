@@ -246,27 +246,31 @@ class CurlAdapter extends AbstractAdapter
 
         // HTTP Context
         if (null !== $context) {
-            $curlOpts[CURLOPT_HTTPPROXYTUNNEL] = $context->proxy !== false;
+            $contextOptions = [];
+
+            $contextOptions[CURLOPT_HTTPPROXYTUNNEL] = $context->proxy !== false;
             if (false !== $context->proxy) {
                 $proxyUri = Uri::createFromString($context->proxy);
-                $curlOpts[CURLOPT_PROXY] = sprintf(
+                $contextOptions[CURLOPT_PROXY] = sprintf(
                     '%s:%d',
                     $proxyUri->getHost(),
                     $proxyUri->getPort() ?? ($proxyUri->getScheme() == 'http' ? 80 : 443)
                 );
-                $curlOpts[CURLOPT_PROXYUSERPWD] = $proxyUri->getUserInfo() ?: null;
+                $contextOptions[CURLOPT_PROXYUSERPWD] = $proxyUri->getUserInfo() ?: null;
             }
 
-            $curlOpts[CURLOPT_SSL_VERIFYPEER] = $context->ssl_verify_peer;
-            $curlOpts[CURLOPT_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
-            $curlOpts[CURLOPT_PROXY_SSL_VERIFYPEER] = $context->ssl_verify_peer;
-            $curlOpts[CURLOPT_PROXY_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
-            $curlOpts[CURLOPT_CAINFO] = $context->ssl_cafile;
-            $curlOpts[CURLOPT_CAPATH] = $context->ssl_capath;
-            $curlOpts[CURLOPT_SSL_CIPHER_LIST] = $context->ssl_ciphers;
-            $curlOpts[CURLOPT_SSLCERT] = $context->ssl_local_cert;
-            $curlOpts[CURLOPT_SSLCERTPASSWD] = $context->ssl_local_cert_passphrase;
-            $curlOpts[CURLOPT_SSLKEY] = $context->ssl_local_pk;
+            $contextOptions[CURLOPT_SSL_VERIFYPEER] = $context->ssl_verify_peer;
+            $contextOptions[CURLOPT_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
+            $contextOptions[CURLOPT_PROXY_SSL_VERIFYPEER] = $context->ssl_verify_peer;
+            $contextOptions[CURLOPT_PROXY_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
+            $contextOptions[CURLOPT_CAINFO] = $context->ssl_cafile;
+            $contextOptions[CURLOPT_CAPATH] = $context->ssl_capath;
+            $contextOptions[CURLOPT_SSL_CIPHER_LIST] = $context->ssl_ciphers;
+            $contextOptions[CURLOPT_SSLCERT] = $context->ssl_local_cert;
+            $contextOptions[CURLOPT_SSLCERTPASSWD] = $context->ssl_local_cert_passphrase;
+            $contextOptions[CURLOPT_SSLKEY] = $context->ssl_local_pk;
+
+            $curlOpts = [...$curlOpts, ...array_filter($contextOptions, fn($value) => null !== $value)];
         }
 
         curl_setopt_array($ch, $curlOpts);
