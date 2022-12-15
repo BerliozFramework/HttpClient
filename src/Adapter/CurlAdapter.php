@@ -270,7 +270,7 @@ class CurlAdapter extends AbstractAdapter
             $contextOptions[CURLOPT_SSLCERTPASSWD] = $context->ssl_local_cert_passphrase;
             $contextOptions[CURLOPT_SSLKEY] = $context->ssl_local_pk;
 
-            $curlOpts = [...$curlOpts, ...array_filter($contextOptions, fn($value) => null !== $value)];
+            $curlOpts = array_replace($curlOpts, array_filter($contextOptions, fn($value) => null !== $value));
         }
 
         curl_setopt_array($ch, $curlOpts);
