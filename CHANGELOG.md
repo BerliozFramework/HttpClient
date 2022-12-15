@@ -11,6 +11,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - `Options` class to manage options of client
 - `HttpContext` class to pass context to adapters
 - 'context' option to personalize Proxy/SSL/... options of adapters
+- New `InflateStream` class for gzip/inflate responses
 
 ### Changed
 
@@ -18,6 +19,8 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - Adapters accept context to personalize Proxy/SSL/... options
 - Undefined option returns NULL instead of exception
 - Force string cast in `HarGenerator` headers
+- Change method to get content and headers from CURL
+- Do not get content from HEAD requests
 
 ### Removed
 

@@ -18,6 +18,7 @@ use Berlioz\Http\Client\Components\HeaderParserTrait;
 use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Uri;
 use DateTimeImmutable;
@@ -58,7 +59,7 @@ class StreamAdapter extends AbstractAdapter
         $requestTime = microtime(true) - $connectTime;
 
         // Read response
-        $response = $this->readResponse($fp, $headersTime);
+        $response = $this->readResponse($fp, $request->getMethod(), $headersTime);
 
         $waitTime = $headersTime - $requestTime;
         $totalTime = microtime(true);
@@ -142,9 +143,9 @@ class StreamAdapter extends AbstractAdapter
             'https' => 'ssl',
         };
         $port = $request->getUri()->getPort() ?? match ($request->getUri()->getScheme()) {
-                'http' => 80,
-                'https' => 443,
-            };
+            'http' => 80,
+            'https' => 443,
+        };
 
         $fp = stream_socket_client(
             address: $address = sprintf('%s://%s:%d', $wrapper, $request->getUri()->getHost(), $port),
@@ -192,7 +193,7 @@ class StreamAdapter extends AbstractAdapter
         }
 
         // Separator for body
-        fwrite($fp, "\r\n") ?? throw new NetworkException('Unable to write request separator', $request);
+            fwrite($fp, "\r\n") ?? throw new NetworkException('Unable to write request separator', $request);
 
         // Write body per packets 8K by 8K
         $stream = $request->getBody();
@@ -213,11 +214,12 @@ class StreamAdapter extends AbstractAdapter
      * Read response.
      *
      * @param $fp
+     * @param string $method
      * @param float|null $headersTime
      *
      * @return ResponseInterface
      */
-    private function readResponse($fp, ?float &$headersTime): ResponseInterface
+    private function readResponse($fp, string $method, ?float &$headersTime): ResponseInterface
     {
         // Headers
         $protocolVersion = $statusCode = $reasonPhrase = null;
@@ -236,6 +238,10 @@ class StreamAdapter extends AbstractAdapter
             reasonPhrase: $reasonPhrase
         );
         $response = $response->withProtocolVersion($protocolVersion);
+
+        if (strtoupper($method) == Request::HTTP_METHOD_HEAD) {
+            return $response;
+        }
 
         $encodingHeader = array_merge(
             $response->getHeader('Content-Encoding'),

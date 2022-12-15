@@ -20,7 +20,9 @@ use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\Stream\MemoryStream;
 use Berlioz\Http\Message\Uri;
 use CurlHandle;
 use DateTimeImmutable;
@@ -85,12 +87,14 @@ class CurlAdapter extends AbstractAdapter
             CURLOPT_CUSTOMREQUEST,
             CURLOPT_URL,
             CURLOPT_HEADER,
+            CURLOPT_HEADERFUNCTION,
             CURLINFO_HEADER_OUT,
             CURLOPT_HTTPHEADER,
             CURLOPT_RETURNTRANSFER,
             CURLOPT_POST,
             CURLOPT_POSTFIELDS,
             CURLOPT_FOLLOWLOCATION,
+            CURLOPT_WRITEFUNCTION,
         ];
 
         $this->options = array_diff($this->options, $reservedOptions);
@@ -101,12 +105,26 @@ class CurlAdapter extends AbstractAdapter
      */
     public function sendRequest(RequestInterface $request, HttpContext $context = null): ResponseInterface
     {
+        $headersStream = new MemoryStream();
+        $bodyStream = new MemoryStream();
+
         // Init CURL
-        $ch = $this->initCurl($request, $context);
+        $ch = $this->initCurl(
+            $request,
+            [
+                CURLOPT_HEADERFUNCTION => fn($ch, $data) => $headersStream->write($data),
+                CURLOPT_WRITEFUNCTION => match (strtoupper($request->getMethod())) {
+                    Request::HTTP_METHOD_HEAD => null,
+                    default => fn($ch, $data) => $bodyStream->write($data),
+                },
+                CURLOPT_NOBODY => $request->getMethod() == Request::HTTP_METHOD_HEAD,
+            ],
+            $context,
+        );
 
         // Execute CURL request
         $dateTime = new DateTimeImmutable();
-        $content = curl_exec($ch);
+        curl_exec($ch);
 
         // CURL error?
         switch (curl_errno($ch)) {
@@ -155,9 +173,9 @@ class CurlAdapter extends AbstractAdapter
 
         // Response
         $protocolVersion = $reasonPhrase = null;
-        $headersSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $bodyStream->seek(0);
         $headers = $this->parseHeaders(
-            substr($content, 0, $headersSize),
+            $headersStream->getContents(),
             protocolVersion: $protocolVersion,
             reasonPhrase: $reasonPhrase
         );
@@ -167,8 +185,9 @@ class CurlAdapter extends AbstractAdapter
             $headers['Location'] = [$redirectUrl];
         }
 
+        // Create response
         $response = new Response(
-            $this->createStream(substr($content, $headersSize), $headers['Content-Encoding'] ?? []),
+            $this->createStream($bodyStream, $headers['Content-Encoding'] ?? null),
             curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
             $headers,
             $reasonPhrase ?? ''
@@ -185,71 +204,72 @@ class CurlAdapter extends AbstractAdapter
      *
      * @return CurlHandle
      */
-    protected function initCurl(RequestInterface $request, ?HttpContext $context = null): CurlHandle
-    {
+    protected function initCurl(
+        RequestInterface $request,
+        array $options = [],
+        ?HttpContext $context = null,
+    ): CurlHandle {
         // CURL init
         $ch = curl_init();
+        curl_setopt_array($ch, $options);
 
         // HTTP Version
         switch ($request->getProtocolVersion()) {
             case 1.0:
-                curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
+                $curlOpts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_0;
                 break;
             case 2.0:
-                curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+                $curlOpts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
                 break;
             case 1.1:
             default:
-                curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+                $curlOpts[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
         }
 
         // URL of request
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $request->getMethod());
-        curl_setopt($ch, CURLOPT_URL, $request->getUri());
+        $curlOpts[CURLOPT_CUSTOMREQUEST] = $request->getMethod();
+        $curlOpts[CURLOPT_URL] = $request->getUri();
 
         // Headers
         {
-            curl_setopt($ch, CURLOPT_HEADER, true);
-            curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->getHeadersLines($request));
+            $curlOpts[CURLOPT_HEADER] = false;
+            $curlOpts[CURLINFO_HEADER_OUT] = false;
+            $curlOpts[CURLOPT_HTTPHEADER] = $this->getHeadersLines($request);
         }
 
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $curlOpts[CURLOPT_FOLLOWLOCATION] = false;
 
         if ($request->getBody()->getSize() > 0) {
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, (string)$request->getBody());
+            $curlOpts[CURLOPT_POST] = true;
+            $curlOpts[CURLOPT_POSTFIELDS] = (string)$request->getBody();
         }
 
         // HTTP Context
         if (null !== $context) {
-            $contextOptions = [];
-
-            $contextOptions[CURLOPT_HTTPPROXYTUNNEL] = $context->proxy !== false;
+            $curlOpts[CURLOPT_HTTPPROXYTUNNEL] = $context->proxy !== false;
             if (false !== $context->proxy) {
                 $proxyUri = Uri::createFromString($context->proxy);
-                $contextOptions[CURLOPT_PROXY] = sprintf(
+                $curlOpts[CURLOPT_PROXY] = sprintf(
                     '%s:%d',
                     $proxyUri->getHost(),
                     $proxyUri->getPort() ?? ($proxyUri->getScheme() == 'http' ? 80 : 443)
                 );
-                $contextOptions[CURLOPT_PROXYUSERPWD] = $proxyUri->getUserInfo() ?: null;
+                $curlOpts[CURLOPT_PROXYUSERPWD] = $proxyUri->getUserInfo() ?: null;
             }
 
-            $contextOptions[CURLOPT_SSL_VERIFYPEER] = $context->ssl_verify_peer;
-            $contextOptions[CURLOPT_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
-            $contextOptions[CURLOPT_PROXY_SSL_VERIFYPEER] = $context->ssl_verify_peer;
-            $contextOptions[CURLOPT_PROXY_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
-            $contextOptions[CURLOPT_CAINFO] = $context->ssl_cafile;
-            $contextOptions[CURLOPT_CAPATH] = $context->ssl_capath;
-            $contextOptions[CURLOPT_SSL_CIPHER_LIST] = $context->ssl_ciphers;
-            $contextOptions[CURLOPT_SSLCERT] = $context->ssl_local_cert;
-            $contextOptions[CURLOPT_SSLCERTPASSWD] = $context->ssl_local_cert_passphrase;
-            $contextOptions[CURLOPT_SSLKEY] = $context->ssl_local_pk;
-
-            curl_setopt_array($ch, array_filter($contextOptions, fn($value) => null !== $value));
+            $curlOpts[CURLOPT_SSL_VERIFYPEER] = $context->ssl_verify_peer;
+            $curlOpts[CURLOPT_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
+            $curlOpts[CURLOPT_PROXY_SSL_VERIFYPEER] = $context->ssl_verify_peer;
+            $curlOpts[CURLOPT_PROXY_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
+            $curlOpts[CURLOPT_CAINFO] = $context->ssl_cafile;
+            $curlOpts[CURLOPT_CAPATH] = $context->ssl_capath;
+            $curlOpts[CURLOPT_SSL_CIPHER_LIST] = $context->ssl_ciphers;
+            $curlOpts[CURLOPT_SSLCERT] = $context->ssl_local_cert;
+            $curlOpts[CURLOPT_SSLCERTPASSWD] = $context->ssl_local_cert_passphrase;
+            $curlOpts[CURLOPT_SSLKEY] = $context->ssl_local_pk;
         }
+
+        curl_setopt_array($ch, $curlOpts);
 
         return $ch;
     }
