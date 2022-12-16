@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client\Adapter;
 
 use Berlioz\Http\Client\History\Timings;
-use Berlioz\Http\Client\Stream\InflateStream;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Stream;
 use InvalidArgumentException;
@@ -90,7 +89,13 @@ abstract class AbstractAdapter implements AdapterInterface
         if (!empty($contentEncodingHeader)) {
             // Gzip
             if (in_array('gzip', $contentEncodingHeader) || in_array('deflate', $contentEncodingHeader)) {
-                return new InflateStream($stream);
+                $fpFrom = $stream->detach();
+                rewind($fpFrom);
+                stream_filter_append($fpFrom, 'zlib.inflate', STREAM_FILTER_READ, ['window' => 15 + 32]);
+                $fpTo = fopen('php://temp', 'r+');
+                stream_copy_to_stream($fpFrom, $fpTo);
+
+                return new Stream($fpTo);
             }
         }
 

@@ -14,6 +14,7 @@ ob_start();
 print $_SERVER['REQUEST_METHOD'];
 print PHP_EOL;
 print file_get_contents('php://stdin');
+print_r(getallheaders());
 $contents = ob_get_clean();
 
 setcookie('test', 'value');

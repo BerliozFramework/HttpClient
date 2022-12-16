@@ -11,7 +11,6 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - `Options` class to manage options of client
 - `HttpContext` class to pass context to adapters
 - 'context' option to personalize Proxy/SSL/... options of adapters
-- New `InflateStream` class for gzip/inflate responses
 
 ### Changed
 

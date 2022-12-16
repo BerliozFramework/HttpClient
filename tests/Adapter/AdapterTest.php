@@ -61,6 +61,11 @@ class AdapterTest extends TestCase
                 $this->assertEquals([$encoding], $response->getHeader('Content-Encoding'));
             }
 
+            // Try first
+            $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
+            $this->assertEquals('GET', $bodyExploded[0]);
+
+            // Try another time
             $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
             $this->assertEquals('GET', $bodyExploded[0]);
         }
