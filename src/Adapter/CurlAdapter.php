@@ -200,6 +200,7 @@ class CurlAdapter extends AbstractAdapter
      * Init CURL options.
      *
      * @param RequestInterface $request
+     * @param array $options
      * @param HttpContext|null $context
      *
      * @return CurlHandle
