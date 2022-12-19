@@ -62,17 +62,17 @@ class StreamAdapter extends AbstractAdapter
         $response = $this->readResponse($fp, $request->getMethod(), $headersTime);
 
         $waitTime = $headersTime - $requestTime;
-        $totalTime = microtime(true);
+        $totalTime = $initTime - microtime(true);
 
         // Close socket
         fclose($fp);
 
         $this->timings = new Timings(
             dateTime: $dateTime,
-            send: $requestTime / 10,
-            wait: $waitTime / 10,
-            receive: ($waitTime - $totalTime) / 10,
-            total: $totalTime
+            send: $requestTime / 1000,
+            wait: $waitTime / 1000,
+            receive: ($totalTime - ($headersTime + $waitTime)) / 1000,
+            total: $totalTime / 1000
         );
 
         return $response;
@@ -188,12 +188,11 @@ class StreamAdapter extends AbstractAdapter
 
         // Headers
         foreach ($this->getHeadersLines($request) as $headerLine) {
-            fwrite($fp, $headerLine . "\r\n") ?:
-                throw new NetworkException('Unable to write request headers', $request);
+            fwrite($fp, $headerLine . "\r\n") ?: throw new NetworkException('Unable to write request headers', $request);
         }
 
         // Separator for body
-            fwrite($fp, "\r\n") ?? throw new NetworkException('Unable to write request separator', $request);
+        fwrite($fp, "\r\n") ?? throw new NetworkException('Unable to write request separator', $request);
 
         // Write body per packets 8K by 8K
         $stream = $request->getBody();

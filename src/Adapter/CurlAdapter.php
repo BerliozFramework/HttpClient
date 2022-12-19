@@ -157,18 +157,18 @@ class CurlAdapter extends AbstractAdapter
         $this->timings = new Timings(
             dateTime: $dateTime,
             send: (float)((curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)
-                    - curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)) / 1000),
             wait: (float)((curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)
-                    - curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)) / 1000),
             receive: (float)((curl_getinfo($ch, CURLINFO_TOTAL_TIME_T)
-                    - curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)) / 10),
-            total: (float)(curl_getinfo($ch, CURLINFO_TOTAL_TIME_T) / 10),
+                    - curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)) / 1000),
+            total: (float)(curl_getinfo($ch, CURLINFO_TOTAL_TIME_T) / 1000),
             blocked: -1,
-            dns: (float)(curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T) / 10),
+            dns: (float)(curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T) / 1000),
             connect: (float)((curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)
-                    - curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T)) / 1000),
             ssl: (float)((curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)
-                    - curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)) / 10),
+                    - curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)) / 1000),
         );
 
         // Response
