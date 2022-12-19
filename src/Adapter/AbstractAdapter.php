@@ -91,7 +91,12 @@ abstract class AbstractAdapter implements AdapterInterface
             if (in_array('gzip', $contentEncodingHeader) || in_array('deflate', $contentEncodingHeader)) {
                 $fpFrom = $stream->detach();
                 rewind($fpFrom);
-                stream_filter_append($fpFrom, 'zlib.inflate', STREAM_FILTER_READ, ['window' => 15 + 32]);
+                stream_filter_append(
+                    $fpFrom,
+                    'zlib.inflate',
+                    STREAM_FILTER_READ,
+                    in_array('gzip', $contentEncodingHeader) ? ['window' => 15 + 32] : [],
+                );
                 $fpTo = fopen('php://temp', 'r+');
                 stream_copy_to_stream($fpFrom, $fpTo);
 

@@ -41,6 +41,6 @@ if ($_GET['encoding'] ?? null) {
 
 print match ($_GET['encoding'] ?? null) {
     'gzip' => gzencode($contents),
-    'deflate' => gzdeflate($contents, encoding: ZLIB_ENCODING_DEFLATE),
+    'deflate' => gzdeflate($contents),
     default => $contents,
 };
