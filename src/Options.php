@@ -41,6 +41,10 @@ class Options
         public ?string $logFile = null,
         // Throw exceptions on HTTP error cases
         public bool $exceptions = true,
+        // Retry on network exception
+        public int|false $retry = 3,
+        // Time between retries (in milliseconds)
+        public int $retryTime = 1000,
         // NULL: to use default cookie manager, FALSE: to not use cookies, a CookieManager object to use
         public CookiesManager|false|null $cookies = null,
         // Callback on each request

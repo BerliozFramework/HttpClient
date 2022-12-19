@@ -14,6 +14,7 @@ namespace Berlioz\Http\Client\Tests;
 
 use Berlioz\Http\Client\Client;
 use Berlioz\Http\Client\Exception\HttpException;
+use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\HttpContext;
 use Berlioz\Http\Client\Options;
@@ -455,5 +456,48 @@ class ClientTest extends TestCase
             adapter: new FakeAdapter($test),
         );
         $client->get('', options: ['context' => ['ssl_verify_peer' => true]]);
+    }
+
+    public function testRetry()
+    {
+        $this->expectNotToPerformAssertions();
+
+        $retry = 0;
+        $test = function ($request) use (&$retry) {
+            if ($retry++ < 2) {
+                throw new NetworkException(message: 'Error', request: $request);
+            }
+
+            return new Response();
+        };
+        $client = new Client(adapter: new FakeAdapter($test));
+        $client->get('', options: ['retryTime' => 10]);
+    }
+
+    public function testRetry_disabled()
+    {
+        $this->expectException(NetworkException::class);
+
+        $retry = 0;
+        $test = function ($request) use (&$retry) {
+            if ($retry++ < 2) {
+                throw new NetworkException(message: 'Error', request: $request);
+            }
+
+            return new Response();
+        };
+        $client = new Client(adapter: new FakeAdapter($test));
+        $client->get('', options: ['retry' => false]);
+    }
+
+    public function testRetry_tooMuch()
+    {
+        $this->expectException(NetworkException::class);
+
+        $test = function ($request) {
+            throw new NetworkException(message: 'Error', request: $request);
+        };
+        $client = new Client(adapter: new FakeAdapter($test));
+        $client->get('', options: ['retryTime' => 10]);
     }
 }

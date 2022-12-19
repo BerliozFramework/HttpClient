@@ -11,6 +11,7 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 - `Options` class to manage options of client
 - `HttpContext` class to pass context to adapters
 - 'context' option to personalize Proxy/SSL/... options of adapters
+- Retry option for `NetworkException`
 
 ### Changed
 

@@ -27,6 +27,7 @@ use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Uri;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerAwareInterface;
@@ -225,11 +226,23 @@ class Client implements ClientInterface, LoggerAwareInterface
             $adapter = $this->getAdapter($options->adapter);
 
             try {
-                $this->lastRequestTime = microtime(true);
-                $response = $adapter->sendRequest($request, $options->context);
+                for ($iRetry = 0; $iRetry < max($options->retry ?: 1, 1); $iRetry++) {
+                    try {
+                        $this->lastRequestTime = microtime(true);
+                        $response = $adapter->sendRequest($request, $options->context);
+                        break;
+                    } catch (NetworkExceptionInterface $exception) {
+                        if (($iRetry + 1) >= $options->retry) {
+                            throw $exception;
+                        }
+
+                        $this->getSession()->getHistory()->add($cookies, $request, timings: $adapter->getTimings());
+                        usleep($options->retryTime * 1000);
+                    }
+                }
 
                 // Add request to history
-                $this->getSession()->getHistory()->add($cookies, $request, $response, $adapter->getTimings());
+                $this->getSession()->getHistory()->add($cookies, $request, $response ?? null, $adapter->getTimings());
             } catch (ClientExceptionInterface $exception) {
                 $this->getSession()->getHistory()->add($cookies, $request, timings: $adapter->getTimings());
                 $this->log($request);
