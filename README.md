@@ -2,7 +2,7 @@
 
 [![Latest Version](https://img.shields.io/packagist/v/berlioz/http-client.svg?style=flat-square)](https://github.com/BerliozFramework/HttpClient/releases)
 [![Software license](https://img.shields.io/github/license/BerliozFramework/HttpClient.svg?style=flat-square)](https://github.com/BerliozFramework/HttpClient/blob/2.x/LICENSE)
-[![Build Status](https://img.shields.io/github/workflow/status/BerliozFramework/HttpClient/Tests/2.x.svg?style=flat-square)](https://github.com/BerliozFramework/HttpClient/actions/workflows/tests.yml?query=branch%3A2.x)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/BerliozFramework/HttpClient/tests.yml?branch=2.x&style=flat-square)](https://github.com/BerliozFramework/HttpClient/actions/workflows/tests.yml?query=branch%3A2.x)
 [![Quality Grade](https://img.shields.io/codacy/grade/3e9df26a706d4ac285e1a49176665751/2.x.svg?style=flat-square)](https://app.codacy.com/gh/BerliozFramework/HttpClient)
 [![Total Downloads](https://img.shields.io/packagist/dt/berlioz/http-client.svg?style=flat-square)](https://packagist.org/packages/berlioz/http-client)
 
