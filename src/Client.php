@@ -17,7 +17,6 @@ namespace Berlioz\Http\Client;
 use Berlioz\Http\Client\Adapter\AdapterInterface;
 use Berlioz\Http\Client\Adapter\CurlAdapter;
 use Berlioz\Http\Client\Adapter\StreamAdapter;
-use Berlioz\Http\Client\Components;
 use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Exception\HttpException;
@@ -266,8 +265,8 @@ class Client implements ClientInterface, LoggerAwareInterface
                     Response::HTTP_STATUS_MOVED_PERMANENTLY,
                     Response::HTTP_STATUS_MOVED_TEMPORARILY,
                     Response::HTTP_STATUS_SEE_OTHER,
-                    307,
-                    308
+                    Response::HTTP_STATUS_TEMPORARY_REDIRECT,
+                    Response::HTTP_STATUS_PERMANENT_REDIRECT,
                 ]
             )) {
                 continue;
@@ -300,9 +299,23 @@ class Client implements ClientInterface, LoggerAwareInterface
                 }
             }
 
+            $redirectMethod = Request::HTTP_METHOD_GET;
+            $redirectBody = null;
+            // For 307 and 308 redirect cases, method and body not changed.
+            if (in_array(
+                $response->getStatusCode(),
+                [
+                    Response::HTTP_STATUS_TEMPORARY_REDIRECT,
+                    Response::HTTP_STATUS_PERMANENT_REDIRECT,
+                ]
+            )) {
+                $redirectMethod = $request->getMethod();
+                $redirectBody = $request->getBody();
+            }
+
             // Create request for redirection
             $request = $this->prepareRequest(
-                new Request(Request::HTTP_METHOD_GET, Uri::create($redirectUri, $request->getUri())),
+                new Request($redirectMethod, Uri::create($redirectUri, $request->getUri()), $redirectBody),
                 $cookies,
                 Options::make([
                     'headers' => [

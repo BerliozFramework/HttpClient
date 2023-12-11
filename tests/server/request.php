@@ -15,6 +15,7 @@ print $_SERVER['REQUEST_METHOD'];
 print PHP_EOL;
 print file_get_contents('php://stdin');
 print_r(getallheaders());
+array_map(fn($postValue) => print $postValue, $_POST);
 $contents = ob_get_clean();
 
 setcookie('test', 'value');
@@ -23,7 +24,7 @@ if ($redirect = (int)($_GET['redirect'] ?? 0)) {
     header(
         'Location: /request.php?encoding=' . ($_GET['encoding'] ?? null) . '&redirect=' . ($redirect - 1),
         true,
-        301
+        $_GET['response_code'] ?? 301
     );
     exit;
 }

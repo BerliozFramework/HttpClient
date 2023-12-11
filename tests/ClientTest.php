@@ -58,6 +58,19 @@ class ClientTest extends TestCase
         $this->assertEquals('GET', $bodyExploded[0]);
     }
 
+    public function testPost_307Redirection()
+    {
+        $uri = new Uri('http', 'localhost', 8080, '/request.php?redirect=1&response_code=307');
+        $client = new Client();
+        $response = $client->post($uri, http_build_query(['body' => 'test']));
+
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $bodyExploded = preg_split('/\r?\n/', (string)$response->getBody());
+        $this->assertEquals('POST', $bodyExploded[0]);
+        $this->assertEquals('test', end($bodyExploded));
+    }
+
     public function testGet_encodedHttpReason()
     {
         $uri = new Uri('http', 'localhost', 8080, '/request.php?test=encoded_http_reason');
