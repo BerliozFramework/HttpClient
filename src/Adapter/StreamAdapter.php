@@ -118,7 +118,7 @@ class StreamAdapter extends AbstractAdapter
             $contextOptions['ssl']['cafile'] = $context->ssl_cafile;
             $contextOptions['ssl']['capath'] = $context->ssl_capath;
             $contextOptions['ssl']['local_cert'] = $context->ssl_local_cert;
-            $contextOptions['ssl']['local_cert_passphrase'] = $context->ssl_local_cert_passphrase;
+            $contextOptions['ssl']['passphrase'] = $context->ssl_local_passphrase ?? $context->ssl_local_cert_passphrase;
             $contextOptions['ssl']['local_pk'] = $context->ssl_local_pk;
             $contextOptions['ssl']['ciphers'] = $context->ssl_ciphers;
             $contextOptions['ssl'] = array_filter($contextOptions['ssl'], fn($value) => null !== $value);
@@ -188,11 +188,12 @@ class StreamAdapter extends AbstractAdapter
 
         // Headers
         foreach ($this->getHeadersLines($request) as $headerLine) {
-            fwrite($fp, $headerLine . "\r\n") ?: throw new NetworkException('Unable to write request headers', $request);
+            fwrite($fp, $headerLine . "\r\n") ?: throw new NetworkException('Unable to write request headers',
+                $request);
         }
 
         // Separator for body
-        fwrite($fp, "\r\n") ?? throw new NetworkException('Unable to write request separator', $request);
+            fwrite($fp, "\r\n") ?? throw new NetworkException('Unable to write request separator', $request);
 
         // Write body per packets 8K by 8K
         $stream = $request->getBody();

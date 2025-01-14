@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.2.0] - 2025-01-14
+
+### Added
+
+- New context option: `HttpContext::$ssl_local_passphrase`
+
+### Deprecated
+
+- Context option: `HttpContext::$ssl_local_cert_passphrase`
+
+### Fixed
+
+- Bad stream context option for passphrase
+
 ## [2.1.0] - 2024-04-19
 
 ### Changed

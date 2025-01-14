@@ -31,6 +31,7 @@ use Psr\Http\Message\ResponseInterface;
 
 // Constants
 defined('CURL_HTTP_VERSION_2_0') || define('CURL_HTTP_VERSION_2_0', 3);
+defined('CURLOPT_KEYPASSWD') || define('CURLOPT_KEYPASSWD', 10026);
 
 /**
  * Class CurlAdapter.
@@ -270,6 +271,7 @@ class CurlAdapter extends AbstractAdapter
             $contextOptions[CURLOPT_SSLCERT] = $context->ssl_local_cert;
             $contextOptions[CURLOPT_SSLCERTPASSWD] = $context->ssl_local_cert_passphrase;
             $contextOptions[CURLOPT_SSLKEY] = $context->ssl_local_pk;
+            $contextOptions[CURLOPT_KEYPASSWD] = $context->ssl_local_passphrase;
 
             $curlOpts = array_replace($curlOpts, array_filter($contextOptions, fn($value) => null !== $value));
         }

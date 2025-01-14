@@ -25,7 +25,9 @@ class HttpContext
         public ?string $ssl_capath = null,
         public ?string $ssl_local_cert = null,
         public ?string $ssl_local_pk = null,
+        /** @deprecated CURL < 7.17 */
         public ?string $ssl_local_cert_passphrase = null,
+        public ?string $ssl_local_passphrase = null,
     ) {
     }
 
