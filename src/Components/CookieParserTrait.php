@@ -83,6 +83,7 @@ trait CookieParserTrait
                 }
             }
             if (array_key_exists('expires', $cookieTmp)) {
+                $cookieTmp['expires'] = preg_replace('/\s*\([^)]+\)\s*$/i', '', $cookieTmp['expires']);
                 $cookie['expires'] = new DateTime($cookieTmp['expires']);
             }
 

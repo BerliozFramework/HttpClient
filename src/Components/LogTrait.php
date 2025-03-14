@@ -38,7 +38,7 @@ trait LogTrait
      *
      * @throws HttpClientException if unable to write logs
      */
-    protected function log(RequestInterface $request, ResponseInterface $response = null): void
+    protected function log(RequestInterface $request, ?ResponseInterface $response = null): void
     {
         // Logger
         if (!empty($this->logger)) {

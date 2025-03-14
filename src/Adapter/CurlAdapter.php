@@ -104,7 +104,7 @@ class CurlAdapter extends AbstractAdapter
     /**
      * @inheritDoc
      */
-    public function sendRequest(RequestInterface $request, HttpContext $context = null): ResponseInterface
+    public function sendRequest(RequestInterface $request, ?HttpContext $context = null): ResponseInterface
     {
         $headersStream = new MemoryStream();
         $bodyStream = new MemoryStream();

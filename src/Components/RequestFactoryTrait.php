@@ -109,7 +109,7 @@ trait RequestFactoryTrait
     public function request(
         string $method,
         UriInterface|string $uri,
-        array $parameters = null,
+        ?array $parameters = null,
         StreamInterface|string|null $body = null,
         array $options = []
     ): ResponseInterface {
@@ -130,7 +130,7 @@ trait RequestFactoryTrait
      */
     public function get(
         UriInterface|string $uri,
-        array $parameters = null,
+        ?array $parameters = null,
         array $options = []
     ): ResponseInterface {
         return $this->request('GET', $uri, $parameters, null, $options);
