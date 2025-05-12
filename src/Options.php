@@ -47,12 +47,15 @@ class Options
         public int $retryTime = 1000,
         // NULL: to use default cookie manager, FALSE: to not use cookies, a CookieManager object to use
         public CookiesManager|false|null $cookies = null,
+        // History size (int)
+        public int|float $history = INF,
         // Callback on each request
         public ?Closure $callback = null,
         // Callback on exception
         public ?Closure $callbackException = null,
         // Default headers
         public array $headers = self::DEFAULT_HEADERS,
+        // HTTP context
         public ?HttpContext $context = null,
         ...$userDefined,
     ) {
@@ -80,6 +83,7 @@ class Options
                 logFile: $initial?->logFile,
                 exceptions: $initial?->exceptions ?? true,
                 cookies: $initial?->cookies,
+                history: $initial?->history ?? INF,
                 callback: $initial?->callback,
                 callbackException: $initial?->callbackException,
                 headers: $initial?->headers ?? self::DEFAULT_HEADERS,

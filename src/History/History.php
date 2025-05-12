@@ -30,6 +30,23 @@ class History implements Countable, IteratorAggregate
     /** @var HistoryEntry[] */
     protected array $history = [];
 
+    public function __construct(private int|float $size = INF)
+    {
+    }
+
+    public function setSize(int|float $size): void
+    {
+        $this->size = $size;
+        $this->flush();
+    }
+
+    public function flush(): void
+    {
+        if ($this->count() > $this->size) {
+            $this->history = array_slice($this->history, -$this->size);
+        }
+    }
+
     /**
      * @inheritDoc
      */
@@ -71,6 +88,7 @@ class History implements Countable, IteratorAggregate
     public function addEntry(HistoryEntry $entry): void
     {
         $this->history[] = $entry;
+        $this->flush();
     }
 
     /**

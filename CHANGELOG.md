@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.4.0] - 2025-05-12
+
+### Added
+
+- New history option: `Options::$history` to define max size of history
+- New property `History::$size` to define the retention of history
+- `Berlioz\Http\Client\Discovery\BerliozDiscovery` discovery class for `php-http/discovery` package
+- New class `HarFactory` to manage HAR files
+
+### Removed
+
+- `psr/log-implementation` composer entry
+
+### Deprecated
+
+- `Session::createFromHar()`, use `HarFactory::createSession()` instead
+- `Session::createFromHarFile()`, use `HarFactory::createSessionFromFile()` instead
+- `Session::getHar()`, use `HarFactory::createHarFromSession()` instead
+- `Session::writeHar()`, use `HarFactory::writeHarFromSession()` instead
+
 ## [2.3.0] - 2025-03-14
 
 ### Changed

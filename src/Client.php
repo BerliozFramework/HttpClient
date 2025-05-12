@@ -67,7 +67,7 @@ class Client implements ClientInterface, LoggerAwareInterface
         $this->options = Options::make($options);
         $this->defaultHeaders = &$this->options->headers;
         $this->adapters = $adapter ?: [extension_loaded('curl') ? new CurlAdapter() : new StreamAdapter()];
-        $this->session = new Session();
+        $this->session = new Session(historySize: $this->options->history);
     }
 
     /**

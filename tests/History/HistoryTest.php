@@ -102,6 +102,7 @@ class HistoryTest extends TestCase
         $history->add(new CookiesManager(), $request2 = new Request('GET', 'fake'));
         $history->add(new CookiesManager(), $request3 = new Request('GET', 'fake'));
 
+        $this->assertCount(3, $history);
         $this->assertSame($request3, $history->get()->getRequest());
         $this->assertSame($request3, $history->get(-1)->getRequest());
         $this->assertSame($request1, $history->get(0)->getRequest());
@@ -127,5 +128,19 @@ class HistoryTest extends TestCase
         $history->add(new CookiesManager(), new Request('GET', 'fake'));
 
         $this->assertSame($request, $history->getFirst()->getRequest());
+    }
+
+    public function testSize()
+    {
+        $history = new History(2);
+        $history->add(new CookiesManager(), $request1 = new Request('GET', 'fake'));
+        $history->add(new CookiesManager(), $request2 = new Request('GET', 'fake'));
+        $history->add(new CookiesManager(), $request3 = new Request('GET', 'fake'));
+
+        $this->assertCount(2, $history);
+        $this->assertSame($request3, $history->get()->getRequest());
+        $this->assertSame($request3, $history->get(-1)->getRequest());
+        $this->assertSame($request2, $history->get(0)->getRequest());
+        $this->assertSame($request3, $history->get(1)->getRequest());
     }
 }

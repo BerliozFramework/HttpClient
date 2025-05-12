@@ -15,12 +15,10 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Cookies\CookiesManager;
-use Berlioz\Http\Client\Har\HarGenerator;
-use Berlioz\Http\Client\Har\HarHandler;
+use Berlioz\Http\Client\Har\HarFactory;
 use Berlioz\Http\Client\History\History;
 use ElGigi\HarParser\Entities\Log;
 use ElGigi\HarParser\Exception\InvalidArgumentException;
-use ElGigi\HarParser\Parser;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -33,42 +31,13 @@ class Session
     protected CookiesManager $cookies;
     protected History $history;
 
-    /**
-     * Create from HAR.
-     *
-     * @param Log $har
-     *
-     * @return static
-     * @throws Exception\HttpClientException
-     */
-    public static function createFromHar(Log $har): static
-    {
-        $harParser = new HarHandler();
-
-        return $harParser->handle($har);
-    }
-
-    /**
-     * Create from HAR file.
-     *
-     * @param string $filename
-     *
-     * @return static
-     * @throws Exception\HttpClientException
-     * @throws InvalidArgumentException
-     */
-    public static function createFromHarFile(string $filename): static
-    {
-        $harParser = new Parser();
-
-        return static::createFromHar($harParser->parse($filename, true));
-    }
-
-    public function __construct(?string $name = null)
-    {
+    public function __construct(
+        ?string $name = null,
+        int|float $historySize = INF,
+    ) {
         $this->name = $name ?? uniqid();
         $this->cookies = new CookiesManager();
-        $this->history = new History();
+        $this->history = new History($historySize);
     }
 
     public function __serialize(): array
@@ -138,17 +107,47 @@ class Session
     }
 
     /**
+     * Create from HAR.
+     *
+     * @param Log $har
+     *
+     * @return static
+     * @throws Exception\HttpClientException
+     * @deprecated 2.4.0 No longer used by internal code and removed in next releases.
+     * @see HarFactory::createSession()
+     */
+    public static function createFromHar(Log $har): static
+    {
+        return HarFactory::createSession($har);
+    }
+
+    /**
+     * Create from HAR file.
+     *
+     * @param string $filename
+     *
+     * @return static
+     * @throws Exception\HttpClientException
+     * @throws InvalidArgumentException
+     * @deprecated 2.4.0 No longer used by internal code and removed in next releases.
+     * @see HarFactory::createSessionFromFile()
+     */
+    public static function createFromHarFile(string $filename): static
+    {
+        return HarFactory::createSessionFromFile($filename);
+    }
+
+    /**
      * Get HAR.
      *
      * @return Log
      * @throws Exception\HttpClientException
+     * @deprecated 2.4.0 No longer used by internal code and removed in next releases.
+     * @see HarFactory::createHarFromSession()
      */
     public function getHar(): Log
     {
-        $generator = new HarGenerator();
-        $generator->handle($this);
-
-        return $generator->getHar();
+        return HarFactory::createHarFromSession($this);
     }
 
     /**
@@ -158,11 +157,11 @@ class Session
      *
      * @return void
      * @throws Exception\HttpClientException
+     * @deprecated 2.4.0 No longer used by internal code and removed in next releases.
+     * @see HarFactory::writeHarFromSession()
      */
     public function writeHar($fp): void
     {
-        $generator = new HarGenerator();
-        $generator->handle($this);
-        $generator->writeHar($fp);
+        HarFactory::writeHarFromSession($this, $fp);
     }
 }
