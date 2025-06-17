@@ -51,31 +51,33 @@ class StreamAdapter extends AbstractAdapter
         // Create socket
         $fp = $this->createSocketClient($request, $context);
 
-        $connectTime = microtime(true) - $initTime;
+        try {
+            $connectTime = microtime(true) - $initTime;
 
-        // Write request
-        $this->writeRequest($fp, $request);
+            // Write request
+            $this->writeRequest($fp, $request);
 
-        $requestTime = microtime(true) - $connectTime;
+            $requestTime = microtime(true) - $connectTime;
 
-        // Read response
-        $response = $this->readResponse($fp, $request->getMethod(), $headersTime);
+            // Read response
+            $response = $this->readResponse($fp, $request->getMethod(), $headersTime);
 
-        $waitTime = $headersTime - $requestTime;
-        $totalTime = $initTime - microtime(true);
+            $waitTime = $headersTime - $requestTime;
+            $totalTime = $initTime - microtime(true);
 
-        // Close socket
-        fclose($fp);
+            $this->timings = new Timings(
+                dateTime: $dateTime,
+                send: $requestTime / 1000,
+                wait: $waitTime / 1000,
+                receive: ($totalTime - ($headersTime + $waitTime)) / 1000,
+                total: $totalTime / 1000
+            );
 
-        $this->timings = new Timings(
-            dateTime: $dateTime,
-            send: $requestTime / 1000,
-            wait: $waitTime / 1000,
-            receive: ($totalTime - ($headersTime + $waitTime)) / 1000,
-            total: $totalTime / 1000
-        );
-
-        return $response;
+            return $response;
+        } finally {
+            // Close socket
+            fclose($fp);
+        }
     }
 
     /**

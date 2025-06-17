@@ -8,9 +8,10 @@ use [Keep a Changelog] (http://keepachangelog.com/).
 
 ### Fixed
 
-- Missing `curl_close()` call
+- Missing `curl_close()` call in `CurlAdapter`
 - Missing `CURLOPT_NOSIGNAL` option to TRUE to prevent timeout
 - `CurlAdapter::clearOptions()`
+- Move socket close in try-finally block in `StreamAdapter`
 
 ## [2.4.0] - 2025-05-12
 
