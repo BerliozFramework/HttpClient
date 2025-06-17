@@ -26,7 +26,9 @@ class CurlAdapterTest extends TestCase
             CURLOPT_URL => 'https://getberlioz.com/',
         ]);
         $reflection = new ReflectionClass($adapter);
-        $adapterOptions = $reflection->getProperty('options')->getValue($adapter);
+        $reflectionProperty = $reflection->getProperty('options');
+        $reflectionProperty->setAccessible(true);
+        $adapterOptions = $reflectionProperty->getValue($adapter);
 
         $this->assertSame(
             [
