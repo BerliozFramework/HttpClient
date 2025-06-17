@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.4.1] - 2025-06-17
+
+### Fixed
+
+- Missing `curl_close()` call
+- Missing `CURLOPT_NOSIGNAL` option to TRUE to prevent timeout
+- `CurlAdapter::clearOptions()`
+
 ## [2.4.0] - 2025-05-12
 
 ### Added
