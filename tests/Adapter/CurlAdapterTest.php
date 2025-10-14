@@ -13,29 +13,46 @@
 namespace Berlioz\Http\Client\Tests\Adapter;
 
 use Berlioz\Http\Client\Adapter\CurlAdapter;
+use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Message\Request;
+use Berlioz\Http\Message\ServerRequest;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
+use Psr\Http\Message\RequestInterface;
 
 class CurlAdapterTest extends TestCase
 {
     public function testOptions()
     {
-        $adapter = new CurlAdapter([
-            CURLOPT_CONNECTTIMEOUT => 10,
+        $adapter = new class([
             CURLOPT_TIMEOUT => 20,
-            CURLOPT_URL => 'https://getberlioz.com/',
-        ]);
-        $reflection = new ReflectionClass($adapter);
-        $reflectionProperty = $reflection->getProperty('options');
-        $reflectionProperty->setAccessible(true);
-        $adapterOptions = $reflectionProperty->getValue($adapter);
+            CURLOPT_URL => 'https://gethectororm.com/',
+        ]) extends CurlAdapter {
+            public function prepareCurlOptions(
+                RequestInterface $request,
+                array $options = [],
+                ?HttpContext $context = null,
+            ): array {
+                return parent::prepareCurlOptions($request, $options, $context);
+            }
+        };
 
-        $this->assertSame(
+        $preparedOptions = $adapter->prepareCurlOptions(
+            new ServerRequest(method: Request::HTTP_METHOD_GET, uri: 'https://getberlioz.com/'),
             [
                 CURLOPT_CONNECTTIMEOUT => 10,
-                CURLOPT_TIMEOUT => 20,
             ],
-            $adapterOptions
+            new HttpContext(ssl_verify_host: false),
+        );
+
+        $expected = [
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_SSL_VERIFYHOST => 0,
+        ];
+
+        $this->assertEquals(
+            $expected,
+            array_intersect_key($preparedOptions, $expected),
         );
     }
 }

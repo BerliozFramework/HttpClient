@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.4.2] - 2025-10-14
+
+### Fixed
+
+- Curl options passed to the constructor are not used (like timeout)
+
 ## [2.4.1] - 2025-06-17
 
 ### Fixed
