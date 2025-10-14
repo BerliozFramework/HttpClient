@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. This projec
 to [Semantic Versioning] (http://semver.org/). For change log format,
 use [Keep a Changelog] (http://keepachangelog.com/).
 
+## [2.5.0] - 2025-10-14
+
+### Added
+
+- Timeout parameters to `StreamAdapter`
+
 ## [2.4.2] - 2025-10-14
 
 ### Fixed

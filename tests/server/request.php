@@ -20,6 +20,10 @@ $contents = ob_get_clean();
 
 setcookie('test', 'value');
 
+if ($sleep = (int)($_GET['sleep'] ?? 0)) {
+    sleep($sleep);
+}
+
 if ($redirect = (int)($_GET['redirect'] ?? 0)) {
     header(
         'Location: /request.php?encoding=' . ($_GET['encoding'] ?? null) . '&redirect=' . ($redirect - 1),

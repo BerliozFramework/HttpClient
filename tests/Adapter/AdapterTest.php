@@ -15,6 +15,7 @@ namespace Berlioz\Http\Client\Tests\Adapter;
 use Berlioz\Http\Client\Adapter\AdapterInterface;
 use Berlioz\Http\Client\Adapter\CurlAdapter;
 use Berlioz\Http\Client\Adapter\StreamAdapter;
+use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Tests\PhpServerTrait;
 use Berlioz\Http\Message\Request;
 use PHPUnit\Framework\TestCase;
@@ -27,11 +28,11 @@ class AdapterTest extends TestCase
     {
         return [
             [
-                new CurlAdapter(),
+                new CurlAdapter([CURLOPT_TIMEOUT => 2]),
                 'curl'
             ],
             [
-                new StreamAdapter(),
+                new StreamAdapter(timeout: 2),
                 'stream'
             ],
         ];
@@ -79,5 +80,15 @@ class AdapterTest extends TestCase
         $response = $adapter->sendRequest(new Request('GET', 'http://localhost:8080/request.php?redirect=1'));
 
         $this->assertEquals(301, $response->getStatusCode());
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     */
+    public function testSendRequest_timeout(AdapterInterface $adapter)
+    {
+        $this->expectException(NetworkException::class);
+
+        $adapter->sendRequest(new Request('GET', 'http://localhost:8080/request.php?sleep=5'));
     }
 }
