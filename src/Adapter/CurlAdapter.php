@@ -128,82 +128,78 @@ class CurlAdapter extends AbstractAdapter
         $ch = curl_init();
         curl_setopt_array($ch, $curlOptions);
 
-        try {
-            // Execute CURL request
-            $dateTime = new DateTimeImmutable();
-            curl_exec($ch);
+        // Execute CURL request
+        $dateTime = new DateTimeImmutable();
+        curl_exec($ch);
 
-            // CURL error?
-            switch (curl_errno($ch)) {
-                case CURLE_OK:
-                    break;
-                case CURLE_URL_MALFORMAT:
-                case CURLE_URL_MALFORMAT_USER:
-                case CURLE_MALFORMAT_USER:
-                case CURLE_BAD_PASSWORD_ENTERED:
-                    throw new RequestException(
-                        sprintf(
-                            'CURL error: %s (%s)',
-                            curl_error($ch),
-                            $request->getUri()
-                        ),
-                        $request
-                    );
-                default:
-                    throw new NetworkException(
-                        sprintf(
-                            'CURL error: %s (%s)',
-                            curl_error($ch),
-                            $request->getUri()
-                        ),
-                        $request
-                    );
-            }
-
-            // Timings
-            $this->timings = new Timings(
-                dateTime: $dateTime,
-                send: (float)((curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)
-                        - curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)) / 1000),
-                wait: (float)((curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)
-                        - curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)) / 1000),
-                receive: (float)((curl_getinfo($ch, CURLINFO_TOTAL_TIME_T)
-                        - curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)) / 1000),
-                total: (float)(curl_getinfo($ch, CURLINFO_TOTAL_TIME_T) / 1000),
-                blocked: -1,
-                dns: (float)(curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T) / 1000),
-                connect: (float)((curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)
-                        - curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T)) / 1000),
-                ssl: (float)((curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)
-                        - curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)) / 1000),
-            );
-
-            // Response
-            $protocolVersion = $reasonPhrase = null;
-            $bodyStream->seek(0);
-            $headers = $this->parseHeaders(
-                $headersStream->getContents(),
-                protocolVersion: $protocolVersion,
-                reasonPhrase: $reasonPhrase
-            );
-
-            // Replace location header with redirect_url parameter
-            if (!empty($redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL))) {
-                $headers['Location'] = [$redirectUrl];
-            }
-
-            // Create response
-            $response = new Response(
-                $this->createStream($bodyStream, $headers['Content-Encoding'] ?? null),
-                curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
-                $headers,
-                $reasonPhrase ?? ''
-            );
-
-            return $response->withProtocolVersion($protocolVersion);
-        } finally {
-            curl_close($ch);
+        // CURL error?
+        switch (curl_errno($ch)) {
+            case CURLE_OK:
+                break;
+            case CURLE_URL_MALFORMAT:
+            case CURLE_URL_MALFORMAT_USER:
+            case CURLE_MALFORMAT_USER:
+            case CURLE_BAD_PASSWORD_ENTERED:
+                throw new RequestException(
+                    sprintf(
+                        'CURL error: %s (%s)',
+                        curl_error($ch),
+                        $request->getUri()
+                    ),
+                    $request
+                );
+            default:
+                throw new NetworkException(
+                    sprintf(
+                        'CURL error: %s (%s)',
+                        curl_error($ch),
+                        $request->getUri()
+                    ),
+                    $request
+                );
         }
+
+        // Timings
+        $this->timings = new Timings(
+            dateTime: $dateTime,
+            send: (float)((curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)
+                    - curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)) / 1000),
+            wait: (float)((curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)
+                    - curl_getinfo($ch, CURLINFO_PRETRANSFER_TIME_T)) / 1000),
+            receive: (float)((curl_getinfo($ch, CURLINFO_TOTAL_TIME_T)
+                    - curl_getinfo($ch, CURLINFO_STARTTRANSFER_TIME_T)) / 1000),
+            total: (float)(curl_getinfo($ch, CURLINFO_TOTAL_TIME_T) / 1000),
+            blocked: -1,
+            dns: (float)(curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T) / 1000),
+            connect: (float)((curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)
+                    - curl_getinfo($ch, CURLINFO_NAMELOOKUP_TIME_T)) / 1000),
+            ssl: (float)((curl_getinfo($ch, CURLINFO_APPCONNECT_TIME_T)
+                    - curl_getinfo($ch, CURLINFO_CONNECT_TIME_T)) / 1000),
+        );
+
+        // Response
+        $protocolVersion = $reasonPhrase = null;
+        $bodyStream->seek(0);
+        $headers = $this->parseHeaders(
+            $headersStream->getContents(),
+            protocolVersion: $protocolVersion,
+            reasonPhrase: $reasonPhrase
+        );
+
+        // Replace location header with redirect_url parameter
+        if (!empty($redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL))) {
+            $headers['Location'] = [$redirectUrl];
+        }
+
+        // Create response
+        $response = new Response(
+            $this->createStream($bodyStream, $headers['Content-Encoding'] ?? null),
+            curl_getinfo($ch, CURLINFO_RESPONSE_CODE),
+            $headers,
+            $reasonPhrase ?? ''
+        );
+
+        return $response->withProtocolVersion($protocolVersion);
     }
 
     /**
