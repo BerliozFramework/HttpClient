@@ -32,6 +32,7 @@ class History implements Countable, IteratorAggregate
 
     public function __construct(private int|float $size = INF)
     {
+        $this->size = abs($this->size);
     }
 
     public function setSize(int|float $size): void
@@ -42,6 +43,10 @@ class History implements Countable, IteratorAggregate
 
     public function flush(): void
     {
+        if (0 === $this->size) {
+            $this->history = [];
+        }
+
         if ($this->count() > $this->size) {
             $this->history = array_slice($this->history, -$this->size);
         }

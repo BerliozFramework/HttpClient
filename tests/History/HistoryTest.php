@@ -143,4 +143,12 @@ class HistoryTest extends TestCase
         $this->assertSame($request2, $history->get(0)->getRequest());
         $this->assertSame($request3, $history->get(1)->getRequest());
     }
+
+    public function testSizeEmpty()
+    {
+        $history = new History(0);
+        $history->add(new CookiesManager(), new Request('GET', 'fake'));
+
+        $this->assertCount(0, $history);
+    }
 }
