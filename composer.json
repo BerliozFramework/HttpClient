@@ -1,0 +1,48 @@
+{
+  "name": "berlioz/http-client",
+  "description": "Berlioz HTTP Client is a PHP library to request HTTP server with continuous navigation, including cookies, sessions...",
+  "license": "MIT",
+  "homepage": "https://getberlioz.com",
+  "support": {
+    "issues": "https://github.com/BerliozFramework/Berlioz/issues",
+    "source": "https://github.com/BerliozFramework/Berlioz"
+  },
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan@getberlioz.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Berlioz\\Http\\Client\\": ""
+    }
+  },
+  "require": {
+    "php": "^8.2",
+    "ext-mbstring": "*",
+    "berlioz/http-message": "self.version",
+    "elgigi/har-parser": "^1.0",
+    "psr/http-client": "^1.0",
+    "psr/log": "^1.0 || ^2.0 || ^3.0"
+  },
+  "suggest": {
+    "ext-curl": "To use CURL adapter",
+    "berlioz/html-selector": "To query HTML result like jQuery in JavaScript."
+  },
+  "provide": {
+    "psr/http-client-implementation": "1.0",
+    "php-http/client-implementation": "1.0"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-main": "3.x-dev"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": false
+    }
+  }
+}
