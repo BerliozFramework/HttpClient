@@ -24,7 +24,7 @@
     "berlioz/http-message": "self.version",
     "elgigi/har-parser": "^1.0",
     "psr/http-client": "^1.0",
-    "psr/log": "^1.0 || ^2.0 || ^3.0"
+    "psr/log": "^2.0 || ^3.0"
   },
   "suggest": {
     "ext-curl": "To use CURL adapter",
