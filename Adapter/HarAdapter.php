@@ -25,6 +25,8 @@ use ElGigi\HarParser\Parser;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
+class_exists(Parser::class) || throw HttpClientException::missingPackage('elgigi/har-parser');
+
 class HarAdapter implements AdapterInterface
 {
     protected Log $har;

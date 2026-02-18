@@ -22,4 +22,15 @@ use Psr\Http\Client\ClientExceptionInterface;
  */
 class HttpClientException extends Exception implements ClientExceptionInterface
 {
+    /**
+     * Missing package.
+     *
+     * @param string $package
+     *
+     * @return static
+     */
+    public static function missingPackage(string $package): static
+    {
+        return new self(sprintf('Package `%s` was not found.', $package));
+    }
 }

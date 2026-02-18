@@ -30,6 +30,8 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
+class_exists(HarBuilder\Builder::class) || throw HttpClientException::missingPackage('elgigi/har-parser');
+
 class HarGenerator
 {
     use CookieParserTrait;

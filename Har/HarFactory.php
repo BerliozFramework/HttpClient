@@ -18,6 +18,8 @@ use ElGigi\HarParser\Entities\Log;
 use ElGigi\HarParser\Exception\InvalidArgumentException;
 use ElGigi\HarParser\Parser;
 
+class_exists(Parser::class) || throw HttpClientException::missingPackage('elgigi/har-parser');
+
 class HarFactory
 {
     /**
