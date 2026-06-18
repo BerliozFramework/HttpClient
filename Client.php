@@ -15,8 +15,7 @@ declare(strict_types=1);
 namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Adapter\AdapterInterface;
-use Berlioz\Http\Client\Adapter\CurlAdapter;
-use Berlioz\Http\Client\Adapter\StreamAdapter;
+use Berlioz\Http\Client\Adapter\AutoAdapter;
 use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Exception\HttpException;
@@ -66,7 +65,7 @@ class Client implements ClientInterface, LoggerAwareInterface
     {
         $this->options = Options::make($options);
         $this->defaultHeaders = &$this->options->headers;
-        $this->adapters = $adapter ?: [extension_loaded('curl') ? new CurlAdapter() : new StreamAdapter()];
+        $this->adapters = $adapter ?: [new AutoAdapter()];
         $this->session = new Session(historySize: $this->options->history);
     }
 
