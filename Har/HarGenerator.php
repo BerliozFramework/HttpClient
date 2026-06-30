@@ -182,7 +182,7 @@ class HarGenerator
             url: (string)$request->getUri(),
             httpVersion: $request->getProtocolVersion(),
             cookies: array_map(
-                fn($cookie) => Har\Cookie::load($cookie),
+                Har\Cookie::load(...),
                 $cookies
             ),
             headers: $this->getHeaders($request),
