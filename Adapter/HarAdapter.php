@@ -104,7 +104,7 @@ class HarAdapter implements AdapterInterface
             $historyUri = Uri::create($entry->getRequest()->getUrl())->withFragment('');
 
             // Same HTTP method
-            if (strtolower($entry->getRequest()->getMethod()) == strtolower($request->getMethod())) {
+            if (strtolower((string)$entry->getRequest()->getMethod()) == strtolower($request->getMethod())) {
                 // Same URI
                 if ((string)$historyUri == (string)$requestUri) {
                     $this->usedEntries[] = $key;

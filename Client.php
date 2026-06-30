@@ -16,6 +16,10 @@ namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Adapter\AdapterInterface;
 use Berlioz\Http\Client\Adapter\AutoAdapter;
+use Berlioz\Http\Client\Components\DefaultHeadersTrait;
+use Berlioz\Http\Client\Components\HeaderParserTrait;
+use Berlioz\Http\Client\Components\LogTrait;
+use Berlioz\Http\Client\Components\RequestFactoryTrait;
 use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Client\Exception\HttpClientException;
 use Berlioz\Http\Client\Exception\HttpException;
@@ -35,10 +39,10 @@ use Psr\Log\LoggerAwareInterface;
  */
 class Client implements ClientInterface, LoggerAwareInterface
 {
-    use Components\DefaultHeadersTrait;
-    use Components\HeaderParserTrait;
-    use Components\LogTrait;
-    use Components\RequestFactoryTrait;
+    use DefaultHeadersTrait;
+    use HeaderParserTrait;
+    use LogTrait;
+    use RequestFactoryTrait;
 
     private ?float $lastRequestTime = null;
     private Options $options;
@@ -194,7 +198,7 @@ class Client implements ClientInterface, LoggerAwareInterface
 
         // Add cookies to request
         if (false !== $cookies) {
-            $cookies = $cookies ?? new CookiesManager();
+            $cookies ??= new CookiesManager();
             $request = $cookies->addCookiesToRequest($request);
         }
 

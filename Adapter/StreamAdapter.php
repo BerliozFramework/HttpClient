@@ -262,7 +262,7 @@ class StreamAdapter extends AbstractAdapter
         );
         $encodingHeader = implode(', ', $encodingHeader);
         $encodingHeader = explode(',', $encodingHeader);
-        $encodingHeader = array_map('trim', $encodingHeader);
+        $encodingHeader = array_map(trim(...), $encodingHeader);
 
         // Content length defined
         if (count($contentLength = $response->getHeader('Content-Length')) > 0) {

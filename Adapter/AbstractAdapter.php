@@ -26,7 +26,7 @@ use Psr\Http\Message\StreamInterface;
  */
 abstract class AbstractAdapter implements AdapterInterface
 {
-    protected ?Timings $timings;
+    protected ?Timings $timings = null;
 
     /**
      * Get timings.
@@ -52,7 +52,7 @@ abstract class AbstractAdapter implements AdapterInterface
         // Host header
         $headers[] = sprintf('Host: %s', ($request->getHeader('host') ?: [$request->getUri()->getHost()])[0]);
         foreach ($request->getHeaders() as $name => $values) {
-            if ('host' == strtolower($name)) {
+            if ('host' == strtolower((string)$name)) {
                 continue;
             }
 

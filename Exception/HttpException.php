@@ -23,8 +23,6 @@ use Throwable;
  */
 class HttpException extends HttpClientException
 {
-    /** @var RequestInterface */
-    private $request;
     /** @var null|ResponseInterface */
     private $response;
 
@@ -38,7 +36,7 @@ class HttpException extends HttpClientException
      */
     public function __construct(
         string $message,
-        RequestInterface $request,
+        private readonly RequestInterface $request,
         ?ResponseInterface $response = null,
         ?Throwable $previous = null
     ) {
@@ -48,7 +46,6 @@ class HttpException extends HttpClientException
         }
 
         parent::__construct($message, $code, $previous);
-        $this->request = $request;
         $this->response = $response;
     }
 

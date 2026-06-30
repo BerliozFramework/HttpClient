@@ -22,16 +22,17 @@ use DateTimeZone;
 use ElGigi\HarParser\Entities as Har;
 use Exception;
 use Psr\Http\Message\UriInterface;
+use Stringable;
 
 /**
  * Class Cookie.
  */
-class Cookie
+class Cookie implements Stringable
 {
     use CookieParserTrait;
 
     protected string $name;
-    protected ?string $value;
+    protected ?string $value = null;
     protected ?DateTimeInterface $expires = null;
     protected ?string $path = null;
     protected ?string $domain = null;

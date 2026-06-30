@@ -52,10 +52,10 @@ trait CookieParserTrait
             $cookieTmp = explode(";", $cookieRaw);
             array_walk(
                 $cookieTmp,
-                function (&$value) {
+                function (&$value): void {
                     $value = explode('=', $value, 2);
-                    $value = array_map('trim', $value);
-                    $value[1] = $value[1] ?? null;
+                    $value = array_map(trim(...), $value);
+                    $value[1] ??= null;
                 }
             );
             $cookieTmp[] = ['name', $cookieTmp[0][0]];
@@ -83,7 +83,7 @@ trait CookieParserTrait
                 }
             }
             if (array_key_exists('expires', $cookieTmp)) {
-                $cookieTmp['expires'] = preg_replace('/\s*\([^)]+\)\s*$/i', '', $cookieTmp['expires']);
+                $cookieTmp['expires'] = preg_replace('/\s*\([^)]+\)\s*$/i', '', (string)$cookieTmp['expires']);
                 $cookie['expires'] = new DateTime($cookieTmp['expires']);
             }
 
@@ -91,7 +91,7 @@ trait CookieParserTrait
             $cookie['domain'] = $cookieTmp['domain'] ?? null;
             if (null !== $cookie['domain']) {
                 $cookie['domain'] = str_starts_with(
-                    $cookie['domain'],
+                    (string)$cookie['domain'],
                     '.'
                 ) ? $cookie['domain'] : '.' . $cookie['domain'];
             }

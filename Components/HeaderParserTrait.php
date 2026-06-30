@@ -45,7 +45,7 @@ trait HeaderParserTrait
         $headers = array_map(
             function ($value) {
                 $value = explode(":", $value, 2);
-                $value = array_map('trim', $value);
+                $value = array_map(trim(...), $value);
 
                 return array_filter($value);
             },

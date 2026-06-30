@@ -219,17 +219,11 @@ class CurlAdapter extends AbstractAdapter
         $options = array_replace($this->options, $options);
 
         // HTTP Version
-        switch ($request->getProtocolVersion()) {
-            case 1.0:
-                $options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_0;
-                break;
-            case 2.0:
-                $options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_2_0;
-                break;
-            case 1.1:
-            default:
-                $options[CURLOPT_HTTP_VERSION] = CURL_HTTP_VERSION_1_1;
-        }
+        $options[CURLOPT_HTTP_VERSION] = match ($request->getProtocolVersion()) {
+            1.0 => CURL_HTTP_VERSION_1_0,
+            2.0 => CURL_HTTP_VERSION_2_0,
+            default => CURL_HTTP_VERSION_1_1,
+        };
 
         // URL of request
         $options[CURLOPT_CUSTOMREQUEST] = $request->getMethod();

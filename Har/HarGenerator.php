@@ -62,7 +62,7 @@ class HarGenerator
      */
     public function getHar(): Har\Log
     {
-        $this->session ?? throw new HttpClientException('No session handled');
+            $this->session ?? throw new HttpClientException('No session handled');
 
         try {
             $builder = new HarBuilder\Builder();
@@ -85,7 +85,7 @@ class HarGenerator
      */
     public function writeHar($fp): void
     {
-        $this->session ?? throw new HttpClientException('No session handled');
+            $this->session ?? throw new HttpClientException('No session handled');
 
         try {
             $builder = new HarBuilder\BuilderStream($fp);
@@ -182,9 +182,7 @@ class HarGenerator
             url: (string)$request->getUri(),
             httpVersion: $request->getProtocolVersion(),
             cookies: array_map(
-                function ($cookie) {
-                    return Har\Cookie::load($cookie);
-                },
+                fn($cookie) => Har\Cookie::load($cookie),
                 $cookies
             ),
             headers: $this->getHeaders($request),

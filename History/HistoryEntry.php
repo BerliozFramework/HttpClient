@@ -16,6 +16,7 @@ namespace Berlioz\Http\Client\History;
 
 use Berlioz\Http\Client\Cookies\CookiesManager;
 use Berlioz\Http\Message\Stream;
+use Berlioz\Http\Message\Stream\MemoryStream;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -50,8 +51,8 @@ class HistoryEntry
     public function __unserialize(array $data): void
     {
         $this->cookies = $data['cookies'];
-        $this->request = $data['request']?->withBody(new Stream\MemoryStream($data['request_body']));
-        $this->response = $data['response']?->withBody(new Stream\MemoryStream($data['response_body']));
+        $this->request = $data['request']?->withBody(new MemoryStream($data['request_body']));
+        $this->response = $data['response']?->withBody(new MemoryStream($data['response_body']));
         $this->timings = $data['timings'];
     }
 
