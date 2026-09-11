@@ -32,6 +32,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Log\LoggerAwareInterface;
 
 /**
@@ -206,25 +207,107 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Compare absolute HTTP origins, including effective default ports.
+     */
+    protected function isSameOrigin(UriInterface $source, UriInterface $target): bool
+    {
+        $scheme = strtolower($source->getScheme());
+        if (
+            !in_array($scheme, ['http', 'https'], true)
+            || $scheme !== strtolower($target->getScheme())
+            || $source->getHost() === ''
+            || strcasecmp($source->getHost(), $target->getHost()) !== 0
+        ) {
+            return false;
+        }
+
+        $defaultPort = $scheme === 'https' ? 443 : 80;
+
+        return ($source->getPort() ?? $defaultPort) === ($target->getPort() ?? $defaultPort);
+    }
+
+    /**
+     * Remove mandatory and application credentials from cross-origin redirect headers.
+     *
+     * @param array<string, string|string[]> $headers
+     * @return array<string, string|string[]>
+     */
+    protected function filterRedirectHeaders(array $headers, Options $options): array
+    {
+        $sensitiveHeaders = array_map(
+            strtolower(...),
+            array_merge(['Authorization', 'Proxy-Authorization', 'Cookie'], $options->redirectSensitiveHeaders),
+        );
+
+        foreach (array_keys($headers) as $name) {
+            if (in_array(strtolower($name), $sensitiveHeaders, true)) {
+                unset($headers[$name]);
+            }
+        }
+
+        return $headers;
+    }
+
+    /**
+     * Resolve Location before comparing origins; never accept credentials supplied by Location.
+     */
+    protected function prepareRedirectUri(string $location, UriInterface $source): UriInterface
+    {
+        $locationUri = Uri::createFromString($location);
+        $target = Uri::create($locationUri, $source)->withFragment('');
+
+        if ($locationUri->getUserInfo() !== '' || !$this->isSameOrigin($source, $target)) {
+            $target = $target->withUserInfo('');
+        }
+
+        return $target;
+    }
+
+    /**
+     * Generate a Referer using strict-origin-when-cross-origin semantics.
+     */
+    protected function createRedirectReferer(UriInterface $source, UriInterface $target): ?string
+    {
+        $sourceScheme = strtolower($source->getScheme());
+        $targetScheme = strtolower($target->getScheme());
+        if (
+            !in_array($sourceScheme, ['http', 'https'], true)
+            || !in_array($targetScheme, ['http', 'https'], true)
+            || $source->getHost() === ''
+            || $target->getHost() === ''
+            || ($sourceScheme === 'https' && $targetScheme === 'http')
+        ) {
+            return null;
+        }
+
+        $referer = $source->withUserInfo('')->withFragment('');
+        if (!$this->isSameOrigin($source, $target)) {
+            $referer = $referer->withPath('/')->withQuery('');
+        }
+
+        return (string)$referer;
+    }
+
+    /**
      * @inheritDoc
      */
     public function sendRequest(RequestInterface $request, Options|array $options = []): ResponseInterface
     {
         $followLocationCounter = 0;
+        $stripSensitiveHeaders = false;
         $originalRequest = $request;
 
-        // Merge options with global options
-        $options = Options::make($options, $this->options);
+        // Keep redirect state local, including headers referenced by the client's default-header trait.
+        $options = clone Options::make($options, $this->options);
+        $headers = $options->headers;
+        $options->headers = &$headers;
 
-        // Cookies manager
-        // If option "cookies" is defined:
-        // - false: no cookies sent in request
-        // - CookieManager: no cookies sent in request
+        // Keep an empty manager for history when automatic cookie handling is disabled.
         $cookies = $options->cookies ?? $this->getSession()->getCookies() ?: new CookiesManager();
 
         do {
             $this->sleep($options);
-            $request = $this->prepareRequest($request, $cookies, $options);
+            $request = $this->prepareRequest($request, $options->cookies === false ? false : $cookies, $options);
             $adapter = $this->getAdapter($options->adapter);
 
             try {
@@ -253,7 +336,9 @@ class Client implements ClientInterface, LoggerAwareInterface
             }
 
             $this->log($request, $response);
-            $cookies->addCookiesFromResponse($request->getUri(), $response);
+            if ($options->cookies !== false) {
+                $cookies->addCookiesFromResponse($request->getUri(), $response);
+            }
 
             // Callback
             if (null !== $options->callback) {
@@ -287,19 +372,19 @@ class Client implements ClientInterface, LoggerAwareInterface
                 throw new RequestException('Too many redirection from host', $originalRequest);
             }
 
-            // Get redirect
-            $redirectUri = Uri::createFromString($newLocation[0]);
+            $sourceUri = $request->getUri();
+            $redirectUri = $this->prepareRedirectUri($newLocation[0], $sourceUri);
+            $stripSensitiveHeaders = $stripSensitiveHeaders || !$this->isSameOrigin($sourceUri, $redirectUri);
 
-            if (empty($redirectUri->getHost())) {
-                $redirectUri =
-                    $redirectUri
-                        ->withScheme($request->getUri()->getScheme())
-                        ->withHost($request->getUri()->getHost())
-                        ->withPort($request->getUri()->getPort());
-
-                if (!empty($userInfo = $request->getUri()->getUserInfo())) {
-                    $redirectUri = $redirectUri->withUserInfo(...explode(':', $userInfo, 2));
+            // Recompute redirect metadata rather than reapplying caller-supplied values.
+            foreach (array_keys($options->headers) as $name) {
+                if (in_array(strtolower((string)$name), ['referer', 'content-type', 'content-length'], true)) {
+                    unset($options->headers[$name]);
                 }
+            }
+
+            if (null !== ($referer = $this->createRedirectReferer($sourceUri, $redirectUri))) {
+                $options->headers['Referer'] = [$referer];
             }
 
             $redirectMethod = Request::HTTP_METHOD_GET;
@@ -314,19 +399,18 @@ class Client implements ClientInterface, LoggerAwareInterface
             )) {
                 $redirectMethod = $request->getMethod();
                 $redirectBody = $request->getBody();
+                if ($request->hasHeader('Content-Type')) {
+                    $options->headers['Content-Type'] = $request->getHeader('Content-Type');
+                }
             }
 
-            // Create request for redirection
-            $request = $this->prepareRequest(
-                new Request($redirectMethod, Uri::create($redirectUri, $request->getUri()), $redirectBody),
-                $cookies,
-                Options::make([
-                    'headers' => [
-                        'Referer' => (string)$request->getUri(),
-                        'Content-Type' => [],
-                    ]
-                ], $options),
-            );
+            if ($stripSensitiveHeaders) {
+                $options->headers = $this->filterRedirectHeaders($options->headers, $options);
+                $redirectUri = $redirectUri->withUserInfo('');
+            }
+
+            // Prepare exactly once at the next iteration, using the persistently filtered options.
+            $request = new Request($redirectMethod, $redirectUri, $redirectBody);
         } while ($followLocation);
 
         // Exceptions if error?

@@ -57,6 +57,8 @@ class Options
         public array $headers = self::DEFAULT_HEADERS,
         // HTTP context
         public ?HttpContext $context = null,
+        // Additional header names to strip on cross-origin redirects (mandatory credentials are always stripped)
+        public array $redirectSensitiveHeaders = [],
         ...$userDefined,
     ) {
         $this->userDefined = $userDefined;
@@ -88,6 +90,7 @@ class Options
                 callbackException: $initial?->callbackException,
                 headers: $initial?->headers ?? self::DEFAULT_HEADERS,
                 context: $initial?->context ? clone $initial->context : null,
+                redirectSensitiveHeaders: $initial?->redirectSensitiveHeaders ?? [],
             );
 
             foreach ($options as $key => $value) {
@@ -97,6 +100,10 @@ class Options
                         self::normalizeHeaders((array)$value),
                     ),
                     'context' => HttpContext::make($value, $new->context),
+                    'redirectSensitiveHeaders' => array_values(array_unique(array_map(
+                        self::normalizeHeaderName(...),
+                        array_merge($new->redirectSensitiveHeaders, (array)$value),
+                    ))),
                     default => $value
                 };
             }
