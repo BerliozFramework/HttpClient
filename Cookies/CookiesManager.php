@@ -16,11 +16,13 @@ namespace Berlioz\Http\Client\Cookies;
 
 use ArrayIterator;
 use Berlioz\Http\Client\Exception\HttpClientException;
+use Berlioz\Http\Client\Exception\InvalidCookieDomainException;
 use Countable;
 use IteratorAggregate;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
+use TypeError;
 
 /**
  * Class CookiesManager.
@@ -32,10 +34,23 @@ class CookiesManager implements IteratorAggregate, Countable
 
     /**
      * CookiesManager constructor.
+     *
+     * Restores an already deduplicated snapshot in its original order, without updating its cookies.
+     * Use addCookie() when replacement by name, domain and path is required.
+     *
+     * @param Cookie[] $cookies Cookies unique by name, domain and path
+     *
+     * @throws TypeError If an element is not a Cookie
      */
-    public function __construct()
+    public function __construct(array $cookies = [])
     {
-        $this->cookies = [];
+        foreach ($cookies as $cookie) {
+            if (!$cookie instanceof Cookie) {
+                throw new TypeError(sprintf('Expected a Cookie instance, %s given', get_debug_type($cookie)));
+            }
+        }
+
+        $this->cookies = array_values($cookies);
     }
 
     /**
@@ -112,6 +127,8 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * Add cookie.
      *
+     * Explicit application insertion; the caller is responsible for validating the cookie's source.
+     *
      * @param Cookie $cookie
      *
      * @return static
@@ -148,6 +165,8 @@ class CookiesManager implements IteratorAggregate, Countable
     /**
      * Add cookies from response
      *
+     * Cookies with a domain not authorized by the response URI are ignored individually.
+     *
      * @param UriInterface $uri
      * @param ResponseInterface $response
      *
@@ -159,7 +178,11 @@ class CookiesManager implements IteratorAggregate, Countable
         $cookies = $response->getHeader('Set-Cookie');
 
         foreach ($cookies as $raw) {
-            $this->addRawCookie($raw, $uri);
+            try {
+                $this->addRawCookie($raw, $uri);
+            } catch (InvalidCookieDomainException) {
+                continue;
+            }
         }
 
         return $this;

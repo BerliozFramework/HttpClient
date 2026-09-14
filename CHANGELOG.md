@@ -13,11 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Preserve host-only scope across HAR exports/imports and validate imported cookies against their entry host
+- Normalize internationalized cookie domains when IDNA support is available; reject Unicode domains otherwise
+- Reject response cookies for unrelated domains before storage, replacement or deletion
+- Preserve host-only cookie scope and enforce cookie path boundaries and default paths
 - Strip credential headers and URI credentials persistently after cross-origin redirects without modifying caller options
 - Sanitize redirect referers and omit them on HTTPS-to-HTTP redirects, preventing reapplication from default headers
 
 ### Fixed
 
+- Restore cookie manager snapshots in linear time without replaying cookie replacement checks
+- Reject empty cookie hosts before IDNA conversion to avoid ValueError on PHP 8.4 and later
+- Ignore invalid cookie domains individually during HAR import and replay
+- Serialize session cookies as an array and discard cookies from legacy session formats
+- Preserve host-only and SameSite attributes when updating cookies
 - Honor `cookies: false` when sending requests and collecting response cookies
 - Preserve content type for 307/308 request bodies and recalculate redirect content length
 

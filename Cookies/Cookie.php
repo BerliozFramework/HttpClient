@@ -16,6 +16,7 @@ namespace Berlioz\Http\Client\Cookies;
 
 use Berlioz\Http\Client\Components\CookieParserTrait;
 use Berlioz\Http\Client\Exception\HttpClientException;
+use Berlioz\Http\Client\Exception\InvalidCookieDomainException;
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
@@ -36,6 +37,7 @@ class Cookie implements Stringable
     protected ?DateTimeInterface $expires = null;
     protected ?string $path = null;
     protected ?string $domain = null;
+    protected bool $hostOnly = true;
     protected ?string $version = null;
     protected bool $httpOnly = false;
     protected bool $secure = false;
@@ -43,6 +45,9 @@ class Cookie implements Stringable
 
     /**
      * Parse raw cookie.
+     *
+     * When an URI is provided, the cookie domain must match its host.
+     * Without an URI, an explicit Domain is required and its source cannot be validated.
      *
      * @param string $raw
      * @param UriInterface|null $uri
@@ -59,11 +64,22 @@ class Cookie implements Stringable
             $cookie->value = $cookieParsed['value'];
             $cookie->expires = $cookieParsed['expires'];
             $cookie->path = $cookieParsed['path'] ?? null;
-            $cookie->domain = $cookieParsed['domain'] ?? $uri?->getHost();
-            if (null === $cookie->domain) {
-                throw new HttpClientException(sprintf('Missing domain for cookie "%s"', $cookie->name));
+            if (null === $cookie->path || !str_starts_with($cookie->path, '/')) {
+                $cookie->path = self::defaultPath($uri?->getPath() ?? '');
             }
-            $cookie->domain = str_starts_with($cookie->domain, '.') ? $cookie->domain : '.' . $cookie->domain;
+            $domain = $cookieParsed['domain'];
+            $cookie->hostOnly = null === $domain || '' === $domain;
+            $host = null !== $uri ? CookieDomain::normalize($uri->getHost()) : null;
+            $cookie->domain = $cookie->hostOnly
+                ? ($host ?? throw new InvalidCookieDomainException('Missing cookie domain'))
+                : CookieDomain::normalize($domain, attribute: true);
+            if (null !== $host && !CookieDomain::matches(
+                $host,
+                $cookie->domain,
+                $cookie->hostOnly,
+            )) {
+                throw new InvalidCookieDomainException('Cookie domain does not match the response host');
+            }
             $cookie->version = $cookieParsed['version'] ?? null;
             $cookie->httpOnly = $cookieParsed['httponly'];
             $cookie->secure = $cookieParsed['secure'];
@@ -77,21 +93,51 @@ class Cookie implements Stringable
         return $cookie;
     }
 
+    private static function defaultPath(string $path): string
+    {
+        if (!str_starts_with($path, '/') || 0 === ($lastSlash = strrpos($path, '/'))) {
+            return '/';
+        }
+
+        return substr($path, 0, $lastSlash);
+    }
+
     /**
      * Create cookie from HAR cookie.
      *
      * @param Har\Cookie $harCookie
+     * @param UriInterface|null $uri Originating HAR entry URI
      *
      * @return static
+     * @throws InvalidCookieDomainException
      */
-    public static function createFromHar(Har\Cookie $harCookie): static
+    public static function createFromHar(Har\Cookie $harCookie, ?UriInterface $uri = null): static
     {
         $cookie = new Cookie();
         $cookie->name = $harCookie->getName();
         $cookie->value = $harCookie->getValue();
         $cookie->expires = $harCookie->getExpires();
         $cookie->path = $harCookie->getPath();
-        $cookie->domain = $harCookie->getDomain();
+        if (null === $cookie->path || !str_starts_with($cookie->path, '/')) {
+            $cookie->path = null !== $uri ? self::defaultPath($uri->getPath()) : null;
+        }
+        $domain = $harCookie->getDomain();
+        // HAR has no standard hostOnly field. Undotted/absent domains are conservatively host-only.
+        $cookie->hostOnly = null === $domain || !str_starts_with($domain, '.');
+        $host = null !== $uri ? CookieDomain::normalize($uri->getHost()) : null;
+        $cookie->domain = null === $domain || '' === $domain
+            ? $host
+            : CookieDomain::normalize($domain, attribute: true);
+        if (null !== $host && null !== $cookie->domain && !CookieDomain::matches(
+            $host,
+            $cookie->domain,
+            hostOnly: false,
+        )) {
+            throw new InvalidCookieDomainException('HAR cookie domain does not match the entry host');
+        }
+        if ($cookie->hostOnly && null !== $host) {
+            $cookie->domain = $host;
+        }
         $cookie->httpOnly = $harCookie->isHttpOnly() ?? false;
         $cookie->secure = $harCookie->isSecure() ?? false;
         $cookie->sameSite = $harCookie->getSameSite();
@@ -113,6 +159,7 @@ class Cookie implements Stringable
                 'expires' => $this->expires,
                 'path' => $this->path,
                 'domain' => $this->domain,
+                'hostOnly' => $this->hostOnly,
                 'version' => $this->version,
                 'httpOnly' => $this->httpOnly,
                 'secure' => $this->secure,
@@ -142,7 +189,7 @@ class Cookie implements Stringable
         null !== $this->expires &&
         $str .= '; Expires=' . $this->expires->setTimezone(new DateTimeZone('GMT'))->format('r');
         null !== $this->path && $str .= '; Path=' . $this->path;
-        null !== $this->domain && $str .= '; Domain=' . $this->domain;
+        !$this->hostOnly && null !== $this->domain && $str .= '; Domain=' . $this->domain;
         null !== $this->version && $str .= '; Version=' . $this->version;
         true === $this->httpOnly && $str .= '; HttpOnly';
         true === $this->secure && $str .= '; Secure';
@@ -236,6 +283,16 @@ class Cookie implements Stringable
     }
 
     /**
+     * Is this cookie restricted to its exact host?
+     *
+     * @return bool
+     */
+    public function isHostOnly(): bool
+    {
+        return $this->hostOnly;
+    }
+
+    /**
      * Get version.
      *
      * @return string|null
@@ -309,6 +366,8 @@ class Cookie implements Stringable
         $this->version = $cookie->version;
         $this->httpOnly = $cookie->httpOnly;
         $this->secure = $cookie->secure;
+        $this->hostOnly = $cookie->hostOnly;
+        $this->sameSite = $cookie->sameSite;
 
         return true;
     }
@@ -323,12 +382,13 @@ class Cookie implements Stringable
     public function isValidForUri(UriInterface $uri): bool
     {
         // Check domain
-        if (!(empty($this->domain) || empty($uri->getHost()) || $this->domain == $uri->getHost())) {
-            if (substr($uri->getHost(), 0 - strlen($this->domain)) != $this->domain) {
-                if (substr($this->domain, 1) != $uri->getHost()) {
-                    return false;
-                }
-            }
+        try {
+            $host = CookieDomain::normalize($uri->getHost());
+        } catch (InvalidCookieDomainException) {
+            return false;
+        }
+        if (!CookieDomain::matches($host, $this->domain ?? '', $this->hostOnly)) {
+            return false;
         }
 
         // Expired?
@@ -337,7 +397,12 @@ class Cookie implements Stringable
         }
 
         // Not valid path?
-        if (!(empty($this->path) || str_starts_with($uri->getPath(), $this->path))) {
+        $path = $uri->getPath() ?: '/';
+        $cookiePath = $this->path ?? '/';
+        if ($path !== $cookiePath && !(
+            str_starts_with($path, $cookiePath) &&
+            (str_ends_with($cookiePath, '/') || '/' === ($path[strlen($cookiePath)] ?? ''))
+        )) {
             return false;
         }
 

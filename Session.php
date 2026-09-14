@@ -34,9 +34,10 @@ class Session
     public function __construct(
         ?string $name = null,
         int|float $historySize = INF,
+        ?CookiesManager $cookies = null,
     ) {
         $this->name = $name ?? uniqid();
-        $this->cookies = new CookiesManager();
+        $this->cookies = $cookies ?? new CookiesManager();
         $this->history = new History($historySize);
     }
 
@@ -44,7 +45,7 @@ class Session
     {
         return [
             'name' => $this->name,
-            'cookies' => $this->cookies,
+            'cookies' => iterator_to_array($this->cookies),
             'history' => $this->history,
         ];
     }
@@ -52,7 +53,8 @@ class Session
     public function __unserialize(array $data): void
     {
         $this->name = $data['name'] ?? uniqid();
-        $this->cookies = $data['cookies'] ?? new CookiesManager();
+        // Older sessions stored a manager with cookies whose original scope cannot be recovered.
+        $this->cookies = new CookiesManager(cookies: is_array($data['cookies'] ?? null) ? $data['cookies'] : []);
         $this->history = $data['history'] ?? new History();
     }
 

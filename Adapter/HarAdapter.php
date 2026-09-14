@@ -126,6 +126,6 @@ class HarAdapter implements AdapterInterface
         $entry = $this->getNextEntry($request);
         $this->timings = $this->handler->getTimings($entry);
 
-        return $this->handler->getHttpResponse($entry->getResponse());
+        return $this->handler->getHttpResponse($entry->getResponse(), $request->getUri());
     }
 }

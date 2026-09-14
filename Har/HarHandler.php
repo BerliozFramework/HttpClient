@@ -16,14 +16,17 @@ namespace Berlioz\Http\Client\Har;
 
 use Berlioz\Http\Client\Cookies\Cookie;
 use Berlioz\Http\Client\Exception\HttpClientException;
+use Berlioz\Http\Client\Exception\InvalidCookieDomainException;
 use Berlioz\Http\Client\History\HistoryEntry;
 use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Client\Session;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
+use Berlioz\Http\Message\Uri;
 use ElGigi\HarParser\Entities as Har;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 
 class_exists(Har\Log::class) || throw HttpClientException::missingPackage('elgigi/har-parser');
 
@@ -38,8 +41,11 @@ class HarHandler
 
         /** @var Har\Entry|null $entry */
         if ($entry = $har->getEntries()->current()) {
-            foreach ($entry->getRequest()->getCookies() as $cookie) {
-                $session->getCookies()->addCookie(Cookie::createFromHar($cookie));
+            foreach ($this->getCookies(
+                $entry->getRequest()->getCookies(),
+                Uri::create($entry->getRequest()->getUrl()),
+            ) as $cookie) {
+                $session->getCookies()->addCookie($cookie);
             }
         }
 
@@ -62,7 +68,7 @@ class HarHandler
     public function addEntryToSession(Session $session, Har\Entry $entry): void
     {
         $request = $this->getHttpRequest($entry->getRequest());
-        $response = $this->getHttpResponse($entry->getResponse());
+        $response = $this->getHttpResponse($entry->getResponse(), $request->getUri());
         $timings = $this->getTimings($entry);
 
         $session->getCookies()->addCookiesFromResponse($request->getUri(), $response);
@@ -93,8 +99,8 @@ class HarHandler
                 implode(
                     '; ',
                     array_map(
-                        fn(Har\Cookie $cookie) => Cookie::createFromHar($cookie)->getRequestHeader(),
-                        $request->getCookies()
+                        fn(Cookie $cookie) => $cookie->getResponseHeader(),
+                        $this->getCookies($request->getCookies(), $httpRequest->getUri()),
                     )
                 )
             ]
@@ -107,10 +113,11 @@ class HarHandler
      * Get HTTP response.
      *
      * @param Har\Response $response
+     * @param UriInterface|null $uri Originating HAR entry URI
      *
      * @return ResponseInterface
      */
-    public function getHttpResponse(Har\Response $response): ResponseInterface
+    public function getHttpResponse(Har\Response $response, ?UriInterface $uri = null): ResponseInterface
     {
         $body = $response->getContent()->getText();
         if ('base64' === $response->getContent()->getEncoding()) {
@@ -129,12 +136,32 @@ class HarHandler
         $httpResponse = $httpResponse->withHeader(
             'Set-Cookie',
             array_map(
-                fn(Har\Cookie $cookie) => Cookie::createFromHar($cookie)->getRequestHeader(),
-                $response->getCookies()
+                fn(Cookie $cookie) => $cookie->getRequestHeader(),
+                $this->getCookies($response->getCookies(), $uri),
             )
         );
 
         return $httpResponse->withProtocolVersion($response->getHttpVersion());
+    }
+
+    /**
+     * @param Har\Cookie[] $cookies
+     * @param UriInterface|null $uri
+     *
+     * @return Cookie[]
+     */
+    private function getCookies(array $cookies, ?UriInterface $uri): array
+    {
+        $result = [];
+        foreach ($cookies as $cookie) {
+            try {
+                $result[] = Cookie::createFromHar($cookie, $uri);
+            } catch (InvalidCookieDomainException) {
+                continue;
+            }
+        }
+
+        return $result;
     }
 
     /**

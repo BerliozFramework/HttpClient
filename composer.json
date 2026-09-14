@@ -26,6 +26,7 @@
     "psr/log": "^2.0 || ^3.0"
   },
   "suggest": {
+    "ext-intl": "To normalize internationalized cookie domains",
     "ext-curl": "To use CURL adapter",
     "berlioz/html-selector": "To query HTML result like jQuery in JavaScript.",
     "elgigi/har-parser": "To use HAR support (record/replay HTTP sessions)"

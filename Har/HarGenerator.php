@@ -182,7 +182,13 @@ class HarGenerator
             url: (string)$request->getUri(),
             httpVersion: $request->getProtocolVersion(),
             cookies: array_map(
-                Har\Cookie::load(...),
+                function (array $cookie): Har\Cookie {
+                    $cookie['domain'] = ($cookie['hostOnly'] ?? true)
+                        ? null
+                        : '.' . ltrim((string)$cookie['domain'], '.');
+
+                    return Har\Cookie::load($cookie);
+                },
                 $cookies
             ),
             headers: $this->getHeaders($request),
@@ -219,14 +225,18 @@ class HarGenerator
     protected function getResponse(ResponseInterface $response, Uri $uri): Har\Response
     {
         $cookies = array_map(
-            function ($raw) use ($uri) {
+            function ($raw) {
                 $cookieData = $this->parseCookie($raw);
 
                 return new Har\Cookie(
                     name: $cookieData['name'],
                     value: $cookieData['value'],
                     path: $cookieData['path'],
-                    domain: $cookieData['domain'] ?? $uri->getHost(),
+                    domain: empty($cookieData['domain'])
+                        ? null
+                        : (str_starts_with((string)$cookieData['domain'], '.')
+                            ? $cookieData['domain']
+                            : '.' . $cookieData['domain']),
                     expires: $cookieData['expires'],
                     httpOnly: $cookieData['httponly'],
                     secure: $cookieData['secure'],

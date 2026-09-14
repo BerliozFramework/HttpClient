@@ -89,12 +89,6 @@ trait CookieParserTrait
 
             $cookie['path'] = $cookieTmp['path'] ?? null;
             $cookie['domain'] = $cookieTmp['domain'] ?? null;
-            if (null !== $cookie['domain']) {
-                $cookie['domain'] = str_starts_with(
-                    (string)$cookie['domain'],
-                    '.'
-                ) ? $cookie['domain'] : '.' . $cookie['domain'];
-            }
             $cookie['version'] = $cookieTmp['version'] ?? null;
             $cookie['httponly'] = array_key_exists('httponly', $cookieTmp);
             $cookie['secure'] = array_key_exists('secure', $cookieTmp);
