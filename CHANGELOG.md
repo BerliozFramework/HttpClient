@@ -7,18 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-09-24
+
 ### Added
 
 - Additive `redirectSensitiveHeaders` option to configure application-specific credential headers
-
-### Security
-
-- Preserve host-only scope across HAR exports/imports and validate imported cookies against their entry host
-- Normalize internationalized cookie domains when IDNA support is available; reject Unicode domains otherwise
-- Reject response cookies for unrelated domains before storage, replacement or deletion
-- Preserve host-only cookie scope and enforce cookie path boundaries and default paths
-- Strip credential headers and URI credentials persistently after cross-origin redirects without modifying caller options
-- Sanitize redirect referers and omit them on HTTPS-to-HTTP redirects, preventing reapplication from default headers
 
 ### Fixed
 
@@ -29,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve host-only and SameSite attributes when updating cookies
 - Honor `cookies: false` when sending requests and collecting response cookies
 - Preserve content type for 307/308 request bodies and recalculate redirect content length
+
+### Security
+
+- Preserve host-only scope across HAR exports/imports and validate imported cookies against their entry host
+- Normalize internationalized cookie domains when IDNA support is available; reject Unicode domains otherwise
+- Reject response cookies for unrelated domains before storage, replacement or deletion
+- Preserve host-only cookie scope and enforce cookie path boundaries and default paths
+- Strip credential headers and URI credentials persistently after cross-origin redirects without modifying caller options
+- Sanitize redirect referers and omit them on HTTPS-to-HTTP redirects, preventing reapplication from default headers
 
 ## [3.2.1] - 2026-09-11
 
