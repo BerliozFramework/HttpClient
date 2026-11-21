@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Client::query()` shortcut for the HTTP `QUERY` method (RFC 10008)
+
+### Changed
+
+- `QUERY` requests keep their method and body when following a 301 or 302 redirection (RFC 10008, section 2.5);
+  only a 303 switches to `GET`
+
 ## [3.3.2] - 2026-10-25
 
 _No changes in this release._

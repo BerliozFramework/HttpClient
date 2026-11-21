@@ -155,6 +155,24 @@ trait RequestFactoryTrait
     }
 
     /**
+     * Query request (RFC 10008).
+     *
+     * @param UriInterface|string $uri Uri of request
+     * @param StreamInterface|string|null $body Body of request
+     * @param array $options Options
+     *
+     * @return ResponseInterface
+     * @throws ClientExceptionInterface If an error happens during processing the request.
+     */
+    public function query(
+        UriInterface|string $uri,
+        StreamInterface|string|null $body = null,
+        array $options = []
+    ): ResponseInterface {
+        return $this->request('QUERY', $uri, null, $body, $options);
+    }
+
+    /**
      * Patch request.
      *
      * @param UriInterface|string $uri Uri of request

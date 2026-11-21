@@ -390,13 +390,16 @@ class Client implements ClientInterface, LoggerAwareInterface
             $redirectMethod = Request::HTTP_METHOD_GET;
             $redirectBody = null;
             // For 307 and 308 redirect cases, method and body not changed.
-            if (in_array(
-                $response->getStatusCode(),
-                [
-                    Response::HTTP_STATUS_TEMPORARY_REDIRECT,
-                    Response::HTTP_STATUS_PERMANENT_REDIRECT,
-                ]
-            )) {
+            // QUERY (RFC 10008, §2.5) also keeps them on 301 and 302; only 303 switches to GET.
+            $preserveMethodStatuses = [
+                Response::HTTP_STATUS_TEMPORARY_REDIRECT,
+                Response::HTTP_STATUS_PERMANENT_REDIRECT,
+            ];
+            if (Request::HTTP_METHOD_QUERY === strtoupper($request->getMethod())) {
+                $preserveMethodStatuses[] = Response::HTTP_STATUS_MOVED_PERMANENTLY;
+                $preserveMethodStatuses[] = Response::HTTP_STATUS_MOVED_TEMPORARILY;
+            }
+            if (in_array($response->getStatusCode(), $preserveMethodStatuses, true)) {
                 $redirectMethod = $request->getMethod();
                 $redirectBody = $request->getBody();
                 if ($request->hasHeader('Content-Type')) {
