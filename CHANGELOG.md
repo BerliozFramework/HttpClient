@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-24
+
 ### Added
 
 - `Client::query()` shortcut for the HTTP `QUERY` method (RFC 10008)
@@ -51,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Authorization`, and rejects HTTPS origins through an HTTPS proxy, which PHP streams cannot handle
 - Origin transport credentials (client certificate, key and passphrases of `HttpContext`, credential options of
   `CurlAdapter` such as `CURLOPT_USERPWD`, `CURLOPT_XOAUTH2_BEARER` or `CURLOPT_COOKIE`) are no longer sent when
-  a redirection leaves the initial origin or the approved ones; proxy settings are kept
+  a redirection leaves the initial origin or the approved ones; proxy settings are kept (GHSA-7xg7-qg7v-j4r4)
 - Custom adapters holding their own origin credentials must implement `OriginCredentialsAwareInterface`: the client
   uses their `withoutOriginCredentials()` copy on those redirections, other adapters only receive the `HttpContext`
   without TLS client options
