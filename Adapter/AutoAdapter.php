@@ -26,7 +26,7 @@ use Psr\Http\Message\ResponseInterface;
  * and the stream adapter is used as a fallback when the cURL extension is not
  * loaded. The resolved adapter is then used for every request.
  */
-class AutoAdapter implements AdapterInterface
+class AutoAdapter implements OriginCredentialsAwareInterface
 {
     private ?AdapterInterface $resolved = null;
 
@@ -77,6 +77,21 @@ class AutoAdapter implements AdapterInterface
         }
 
         return $this->resolved = $this->stream ??= new StreamAdapter();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withoutOriginCredentials(): static
+    {
+        $resolved = $this->resolveAdapter();
+        $clone = clone $this;
+
+        if ($resolved instanceof OriginCredentialsAwareInterface) {
+            $clone->resolved = $resolved->withoutOriginCredentials();
+        }
+
+        return $clone;
     }
 
     /**

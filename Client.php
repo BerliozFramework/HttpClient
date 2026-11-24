@@ -16,6 +16,7 @@ namespace Berlioz\Http\Client;
 
 use Berlioz\Http\Client\Adapter\AdapterInterface;
 use Berlioz\Http\Client\Adapter\AutoAdapter;
+use Berlioz\Http\Client\Adapter\OriginCredentialsAwareInterface;
 use Berlioz\Http\Client\Components\DefaultHeadersTrait;
 use Berlioz\Http\Client\Components\HeaderParserTrait;
 use Berlioz\Http\Client\Components\LogTrait;
@@ -227,6 +228,30 @@ class Client implements ClientInterface, LoggerAwareInterface
     }
 
     /**
+     * Is target allowed to receive the origin credentials of the transport (client certificate, adapter credentials)?
+     *
+     * @param UriInterface $source Initial request URI
+     * @param UriInterface $target
+     * @param CredentialsOrigin[] $allowedOrigins
+     *
+     * @return bool
+     */
+    protected function isCredentialOrigin(UriInterface $source, UriInterface $target, array $allowedOrigins): bool
+    {
+        if ($this->isSameOrigin($source, $target)) {
+            return true;
+        }
+
+        foreach ($allowedOrigins as $allowedOrigin) {
+            if ($allowedOrigin->matches($target)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Remove mandatory and application credentials from cross-origin redirect headers.
      *
      * @param array<string, string|string[]> $headers
@@ -305,16 +330,29 @@ class Client implements ClientInterface, LoggerAwareInterface
         // Keep an empty manager for history when automatic cookie handling is disabled.
         $cookies = $options->cookies ?? $this->getSession()->getCookies() ?: new CookiesManager();
 
+        // Origin credentials of the transport are scoped to the initial origin and the approved ones.
+        $context = $options->context;
+        $credentialsOrigins = array_map(
+            CredentialsOrigin::fromString(...),
+            $options->context->credentials_origins ?? [],
+        );
+        $credentialsSource = null;
+        $originCredentials = true;
+
         do {
             $this->sleep($options);
             $request = $this->prepareRequest($request, $options->cookies === false ? false : $cookies, $options);
+            $credentialsSource ??= $request->getUri();
             $adapter = $this->getAdapter($options->adapter);
+            if (!$originCredentials && $adapter instanceof OriginCredentialsAwareInterface) {
+                $adapter = $adapter->withoutOriginCredentials();
+            }
 
             try {
                 for ($iRetry = 0; $iRetry < max($options->retry ?: 1, 1); $iRetry++) {
                     try {
                         $this->lastRequestTime = microtime(true);
-                        $response = $adapter->sendRequest($request, $options->context);
+                        $response = $adapter->sendRequest($request, $context);
                         break;
                     } catch (NetworkExceptionInterface $exception) {
                         if (($iRetry + 1) >= $options->retry) {
@@ -375,6 +413,15 @@ class Client implements ClientInterface, LoggerAwareInterface
             $sourceUri = $request->getUri();
             $redirectUri = $this->prepareRedirectUri($newLocation[0], $sourceUri);
             $stripSensitiveHeaders = $stripSensitiveHeaders || !$this->isSameOrigin($sourceUri, $redirectUri);
+
+            // Once downgraded, origin credentials are never restored, even when coming back to an approved origin.
+            if (
+                $originCredentials
+                && !$this->isCredentialOrigin($credentialsSource, $redirectUri, $credentialsOrigins)
+            ) {
+                $originCredentials = false;
+                $context = $options->context?->withoutOriginCredentials();
+            }
 
             // Recompute redirect metadata rather than reapplying caller-supplied values.
             foreach (array_keys($options->headers) as $name) {

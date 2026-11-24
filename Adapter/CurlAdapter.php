@@ -35,7 +35,7 @@ defined('CURLOPT_KEYPASSWD') || define('CURLOPT_KEYPASSWD', 10026);
 /**
  * Class CurlAdapter.
  */
-class CurlAdapter extends AbstractAdapter
+class CurlAdapter extends AbstractAdapter implements OriginCredentialsAwareInterface
 {
     use HeaderParserTrait;
 
@@ -102,6 +102,55 @@ class CurlAdapter extends AbstractAdapter
         ];
 
         $this->options = array_diff_key($this->options, array_fill_keys($reservedOptions, null));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function withoutOriginCredentials(): static
+    {
+        $clone = clone $this;
+        $clone->options = array_diff_key($this->options, array_flip($this->getOriginCredentialsOptions()));
+
+        return $clone;
+    }
+
+    /**
+     * Get CURL options carrying origin credentials, removed by {@see CurlAdapter::withoutOriginCredentials()}.
+     *
+     * Proxy credentials are not part of them: they are sent to the proxy, not to the origin.
+     *
+     * @return int[]
+     */
+    protected function getOriginCredentialsOptions(): array
+    {
+        $names = [
+            'CURLOPT_USERPWD',
+            'CURLOPT_USERNAME',
+            'CURLOPT_PASSWORD',
+            'CURLOPT_LOGIN_OPTIONS',
+            'CURLOPT_SASL_AUTHZID',
+            'CURLOPT_XOAUTH2_BEARER',
+            'CURLOPT_TLSAUTH_USERNAME',
+            'CURLOPT_TLSAUTH_PASSWORD',
+            'CURLOPT_SSLCERT',
+            'CURLOPT_SSLCERT_BLOB',
+            'CURLOPT_SSLCERTPASSWD',
+            'CURLOPT_SSLKEY',
+            'CURLOPT_SSLKEY_BLOB',
+            'CURLOPT_SSLKEYPASSWD',
+            'CURLOPT_KEYPASSWD',
+            'CURLOPT_NETRC',
+            'CURLOPT_NETRC_FILE',
+            'CURLOPT_COOKIE',
+            'CURLOPT_COOKIEFILE',
+            'CURLOPT_COOKIELIST',
+        ];
+
+        return array_values(array_unique(array_map(
+            constant(...),
+            array_filter($names, defined(...)),
+        )));
     }
 
     /**

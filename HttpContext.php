@@ -28,7 +28,30 @@ class HttpContext
         /** @deprecated CURL < 7.17 */
         public ?string $ssl_local_cert_passphrase = null,
         public ?string $ssl_local_passphrase = null,
+        /**
+         * Additional origins allowed to receive origin credentials on redirects
+         * ("https://*.example.com" for one subdomain level).
+         *
+         * @var string[]|null
+         */
+        public ?array $credentials_origins = null,
     ) {
+    }
+
+    /**
+     * Get a copy without origin credentials (TLS client certificate), keeping proxy and TLS verification settings.
+     *
+     * @return static
+     */
+    public function withoutOriginCredentials(): static
+    {
+        $clone = clone $this;
+        $clone->ssl_local_cert = null;
+        $clone->ssl_local_pk = null;
+        $clone->ssl_local_cert_passphrase = null;
+        $clone->ssl_local_passphrase = null;
+
+        return $clone;
     }
 
     public static function make(array|self|null $context = null, ?self $initial = null): self
