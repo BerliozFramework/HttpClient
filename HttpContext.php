@@ -35,6 +35,12 @@ class HttpContext
          * @var string[]|null
          */
         public ?array $credentials_origins = null,
+        public bool $proxy_ssl_verify_peer = true,
+        public bool $proxy_ssl_verify_host = true,
+        /** Default to $ssl_cafile */
+        public ?string $proxy_ssl_cafile = null,
+        /** Default to $ssl_capath */
+        public ?string $proxy_ssl_capath = null,
     ) {
     }
 

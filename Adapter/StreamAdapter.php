@@ -16,14 +16,16 @@ namespace Berlioz\Http\Client\Adapter;
 
 use Berlioz\Http\Client\Components\HeaderParserTrait;
 use Berlioz\Http\Client\Exception\NetworkException;
+use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Client\Proxy;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
-use Berlioz\Http\Message\Uri;
 use DateTimeImmutable;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 /**
  * Class StreamAdapter.
@@ -48,13 +50,14 @@ class StreamAdapter extends AbstractAdapter
         $dateTime = new DateTimeImmutable();
         $initTime = microtime(true);
 
+        $proxy = Proxy::fromContext($context, $request);
         $fp = $this->createSocketClient($request, $context);
 
         try {
             $connectTime = microtime(true) - $initTime;
 
-            // Write request
-            $this->writeRequest($fp, $request);
+            // Write request (absolute-form through a proxy, except inside a tunnel)
+            $this->writeRequest($fp, $request, 'https' !== $request->getUri()->getScheme() ? $proxy : null);
 
             $requestTime = microtime(true) - $connectTime;
 
@@ -81,50 +84,73 @@ class StreamAdapter extends AbstractAdapter
     /**
      * Create stream context.
      *
+     * Without proxy, the TLS options are those of the origin. With an HTTPS proxy, they are those of the proxy;
+     * the origin TLS options are applied later, inside the tunnel (see {@see StreamAdapter::openTunnel()}).
+     *
      * @param HttpContext|null $context
+     * @param Proxy|null $proxy
      *
      * @return resource
      */
-    protected function createContext(?HttpContext $context = null)
+    protected function createContext(?HttpContext $context = null, ?Proxy $proxy = null)
     {
         $contextOptions = [];
-        $contextOptions['http']['follow_location'] = false;
 
-        // HTTP Context
         if (null !== $context) {
-            $contextOptions['http']['proxy'] = null;
-
-            if (false !== $context->proxy) {
-                $proxyUri = Uri::createFromString($context->proxy);
-
-                $contextOptions['http']['proxy'] = sprintf(
-                    '%s:%d',
-                    $proxyUri->getHost(),
-                    $proxyUri->getPort() ?? ($proxyUri->getScheme() == 'http' ? 80 : 443)
-                );
-                $contextOptions['http']['request_fulluri'] = true;
-
-                if ($proxyUri->getUserInfo()) {
-                    $contextOptions['http']['header'] = sprintf(
-                        'Authorization: Basic %s',
-                        base64_encode($proxyUri->getUserInfo())
-                    );
-                }
+            if (null === $proxy) {
+                $contextOptions['ssl'] = $this->getSslOptions($context);
             }
 
-            $contextOptions['ssl']['verify_peer'] = $context->ssl_verify_peer;
-            $contextOptions['ssl']['verify_peer_name'] = $context->ssl_verify_host;
-            $contextOptions['ssl']['allow_self_signed'] = !$context->ssl_verify_peer;
-            $contextOptions['ssl']['cafile'] = $context->ssl_cafile;
-            $contextOptions['ssl']['capath'] = $context->ssl_capath;
-            $contextOptions['ssl']['local_cert'] = $context->ssl_local_cert;
-            $contextOptions['ssl']['passphrase'] = $context->ssl_local_passphrase ?? $context->ssl_local_cert_passphrase;
-            $contextOptions['ssl']['local_pk'] = $context->ssl_local_pk;
-            $contextOptions['ssl']['ciphers'] = $context->ssl_ciphers;
-            $contextOptions['ssl'] = array_filter($contextOptions['ssl'], fn($value) => null !== $value);
+            if (true === $proxy?->isSecure()) {
+                $contextOptions['ssl'] = $this->getProxySslOptions($context);
+            }
         }
 
         return stream_context_create($contextOptions);
+    }
+
+    /**
+     * Get origin TLS options.
+     *
+     * @param HttpContext $context
+     *
+     * @return array
+     */
+    protected function getSslOptions(HttpContext $context): array
+    {
+        $options = [
+            'verify_peer' => $context->ssl_verify_peer,
+            'verify_peer_name' => $context->ssl_verify_host,
+            'allow_self_signed' => !$context->ssl_verify_peer,
+            'cafile' => $context->ssl_cafile,
+            'capath' => $context->ssl_capath,
+            'local_cert' => $context->ssl_local_cert,
+            'passphrase' => $context->ssl_local_passphrase ?? $context->ssl_local_cert_passphrase,
+            'local_pk' => $context->ssl_local_pk,
+            'ciphers' => $context->ssl_ciphers,
+        ];
+
+        return array_filter($options, fn($value) => null !== $value);
+    }
+
+    /**
+     * Get proxy TLS options.
+     *
+     * @param HttpContext $context
+     *
+     * @return array
+     */
+    protected function getProxySslOptions(HttpContext $context): array
+    {
+        $options = [
+            'verify_peer' => $context->proxy_ssl_verify_peer,
+            'verify_peer_name' => $context->proxy_ssl_verify_host,
+            'allow_self_signed' => !$context->proxy_ssl_verify_peer,
+            'cafile' => $context->proxy_ssl_cafile ?? $context->ssl_cafile,
+            'capath' => $context->proxy_ssl_capath ?? $context->ssl_capath,
+        ];
+
+        return array_filter($options, fn($value) => null !== $value);
     }
 
     /**
@@ -135,29 +161,48 @@ class StreamAdapter extends AbstractAdapter
      *
      * @return resource
      * @throws NetworkException
+     * @throws RequestException
      */
     protected function createSocketClient(RequestInterface $request, ?HttpContext $context = null)
     {
-        $wrapper = match ($request->getUri()->getScheme()) {
-            'http' => 'tcp',
-            'https' => 'ssl',
+        $proxy = Proxy::fromContext($context, $request);
+        $secure = match ($request->getUri()->getScheme()) {
+            'http' => false,
+            'https' => true,
         };
-        $port = $request->getUri()->getPort() ?? match ($request->getUri()->getScheme()) {
-            'http' => 80,
-            'https' => 443,
+        $host = $request->getUri()->getHost();
+        $port = $request->getUri()->getPort() ?? ($secure ? 443 : 80);
+
+        // PHP streams cannot run TLS inside TLS
+        if (true === $proxy?->isSecure() && $secure) {
+            throw new RequestException(
+                'HTTPS requests through an HTTPS proxy are not supported by the stream adapter',
+                $request
+            );
+        }
+
+        $address = match (true) {
+            null === $proxy => sprintf('%s://%s:%d', $secure ? 'ssl' : 'tcp', $host, $port),
+            default => sprintf('%s://%s', $proxy->isSecure() ? 'ssl' : 'tcp', $proxy->getAuthority()),
         };
 
-        $fp = stream_socket_client(
-            address: $address = sprintf('%s://%s:%d', $wrapper, $request->getUri()->getHost(), $port),
+        error_clear_last();
+        $fp = @stream_socket_client(
+            address: $address,
             error_code: $errno,
             error_message: $errstr,
             timeout: $this->connectTimeout,
-            context: $this->createContext($context),
+            context: $this->createContext($context, $proxy),
         );
 
         if (false === $fp) {
             throw new NetworkException(
-                sprintf('Unable to connect to %s : %s (%d)', $address, $errstr, $errno),
+                sprintf(
+                    'Unable to connect to %s : %s (%d)',
+                    $address,
+                    $errstr ?: (error_get_last()['message'] ?? 'unknown error'),
+                    $errno
+                ),
                 $request
             );
         }
@@ -167,7 +212,78 @@ class StreamAdapter extends AbstractAdapter
             stream_set_timeout($fp, $this->timeout);
         }
 
+        if (null !== $proxy && $secure) {
+            try {
+                $this->openTunnel($fp, $request, $proxy, $context);
+            } catch (Throwable $exception) {
+                fclose($fp);
+                throw $exception;
+            }
+        }
+
         return $fp;
+    }
+
+    /**
+     * Open a tunnel to the origin through the proxy, and enable origin TLS.
+     *
+     * @param resource $fp
+     * @param RequestInterface $request
+     * @param Proxy $proxy
+     * @param HttpContext|null $context
+     *
+     * @throws NetworkException
+     */
+    protected function openTunnel($fp, RequestInterface $request, Proxy $proxy, ?HttpContext $context): void
+    {
+        $target = sprintf('%s:%d', $request->getUri()->getHost(), $request->getUri()->getPort() ?? 443);
+
+        $connect = sprintf("CONNECT %s HTTP/1.1\r\nHost: %s\r\n", $target, $target);
+        if (null !== ($authorization = $proxy->getAuthorization())) {
+            $connect .= sprintf("Proxy-Authorization: %s\r\n", $authorization);
+        }
+        $connect .= "\r\n";
+
+        if (false === fwrite($fp, $connect)) {
+            throw new NetworkException('Unable to write proxy CONNECT request', $request);
+        }
+
+        $headers = $this->readHeaders($fp, $request);
+        if (1 !== preg_match('#^HTTP/\d(?:\.\d)?\s+(\d{3})#', $headers, $matches)) {
+            throw new NetworkException(sprintf('Invalid proxy response to CONNECT %s', $target), $request);
+        }
+        if (($status = (int)$matches[1]) < 200 || $status >= 300) {
+            throw new NetworkException(
+                sprintf('Proxy refused CONNECT %s with status %d', $target, $status),
+                $request
+            );
+        }
+
+        // Bytes received before the TLS handshake would be read as if they came from the authenticated origin
+        if (stream_get_meta_data($fp)['unread_bytes'] > 0) {
+            throw new NetworkException(
+                sprintf('Unexpected data from proxy after CONNECT %s response', $target),
+                $request
+            );
+        }
+
+        $sslOptions = null !== $context ? $this->getSslOptions($context) : [];
+        $sslOptions['peer_name'] = trim($request->getUri()->getHost(), '[]');
+        foreach ($sslOptions as $name => $value) {
+            stream_context_set_option($fp, 'ssl', $name, $value);
+        }
+
+        error_clear_last();
+        if (true !== @stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            throw new NetworkException(
+                sprintf(
+                    'Unable to establish TLS connection with %s through proxy: %s',
+                    $target,
+                    error_get_last()['message'] ?? 'unknown error'
+                ),
+                $request
+            );
+        }
     }
 
     /**
@@ -175,25 +291,43 @@ class StreamAdapter extends AbstractAdapter
      *
      * @param $fp
      * @param RequestInterface $request
+     * @param Proxy|null $proxy Proxy to which the request is sent in absolute-form
      *
      * @throws NetworkException
      */
-    protected function writeRequest($fp, RequestInterface $request): void
+    protected function writeRequest($fp, RequestInterface $request, ?Proxy $proxy = null): void
     {
+        $uri = $request->getUri();
+        $target = ($uri->getPath() ?: '/') . (!empty($uri->getQuery()) ? '?' . $uri->getQuery() : '');
+        $headersLines = $this->getHeadersLines($request);
+
+        if (null !== $proxy) {
+            $target = sprintf(
+                '%s://%s%s%s',
+                $uri->getScheme(),
+                $uri->getHost(),
+                null !== $uri->getPort() ? ':' . $uri->getPort() : '',
+                $target,
+            );
+
+            if (null !== ($authorization = $proxy->getAuthorization())) {
+                $headersLines[] = sprintf('Proxy-Authorization: %s', $authorization);
+            }
+        }
+
         // Write headers
         fwrite(
             $fp,
             sprintf(
                 "%s %s HTTP/%s\r\n",
                 $request->getMethod(),
-                $request->getUri()->getPath() .
-                (!empty($request->getUri()->getQuery()) ? '?' . $request->getUri()->getQuery() : ''),
+                $target,
                 $request->getProtocolVersion()
             )
         ) ?: $this->throwIfTimedOut($fp, new NetworkException('Unable to write request headers', $request));
 
         // Headers
-        foreach ($this->getHeadersLines($request) as $headerLine) {
+        foreach ($headersLines as $headerLine) {
             fwrite($fp, $headerLine . "\r\n") ?:
                 $this->throwIfTimedOut($fp, new NetworkException('Unable to write request headers', $request));
         }

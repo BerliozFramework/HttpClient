@@ -20,10 +20,10 @@ use Berlioz\Http\Client\Exception\NetworkException;
 use Berlioz\Http\Client\Exception\RequestException;
 use Berlioz\Http\Client\History\Timings;
 use Berlioz\Http\Client\HttpContext;
+use Berlioz\Http\Client\Proxy;
 use Berlioz\Http\Message\Request;
 use Berlioz\Http\Message\Response;
 use Berlioz\Http\Message\Stream\MemoryStream;
-use Berlioz\Http\Message\Uri;
 use DateTimeImmutable;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -299,21 +299,26 @@ class CurlAdapter extends AbstractAdapter implements OriginCredentialsAwareInter
         if (null !== $context) {
             $contextOptions = [];
 
-            $contextOptions[CURLOPT_HTTPPROXYTUNNEL] = $context->proxy !== false;
-            if (false !== $context->proxy) {
-                $proxyUri = Uri::createFromString($context->proxy);
-                $contextOptions[CURLOPT_PROXY] = sprintf(
-                    '%s:%d',
-                    $proxyUri->getHost(),
-                    $proxyUri->getPort() ?? ($proxyUri->getScheme() == 'http' ? 80 : 443)
-                );
-                $contextOptions[CURLOPT_PROXYUSERPWD] = $proxyUri->getUserInfo() ?: null;
+            $proxy = Proxy::fromContext($context, $request);
+
+            $contextOptions[CURLOPT_HTTPPROXYTUNNEL] = null !== $proxy;
+            if (null !== $proxy) {
+                if ($proxy->isSecure() && !$this->supportsHttpsProxy()) {
+                    throw new RequestException('HTTPS proxy is not supported by the installed libcurl', $request);
+                }
+
+                $contextOptions[CURLOPT_PROXY] = $proxy->getUrl();
+                $contextOptions[CURLOPT_PROXYTYPE] = $proxy->isSecure() ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
+                $contextOptions[CURLOPT_PROXYUSERNAME] = $proxy->user;
+                $contextOptions[CURLOPT_PROXYPASSWORD] = null !== $proxy->user ? ($proxy->password ?? '') : null;
+                $contextOptions[CURLOPT_PROXY_CAINFO] = $context->proxy_ssl_cafile ?? $context->ssl_cafile;
+                $contextOptions[CURLOPT_PROXY_CAPATH] = $context->proxy_ssl_capath ?? $context->ssl_capath;
             }
 
             $contextOptions[CURLOPT_SSL_VERIFYPEER] = $context->ssl_verify_peer;
             $contextOptions[CURLOPT_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
-            $contextOptions[CURLOPT_PROXY_SSL_VERIFYPEER] = $context->ssl_verify_peer;
-            $contextOptions[CURLOPT_PROXY_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
+            $contextOptions[CURLOPT_PROXY_SSL_VERIFYPEER] = $context->proxy_ssl_verify_peer;
+            $contextOptions[CURLOPT_PROXY_SSL_VERIFYHOST] = $context->proxy_ssl_verify_host ? 2 : 0;
             $contextOptions[CURLOPT_CAINFO] = $context->ssl_cafile;
             $contextOptions[CURLOPT_CAPATH] = $context->ssl_capath;
             $contextOptions[CURLOPT_SSL_CIPHER_LIST] = $context->ssl_ciphers;
@@ -326,5 +331,15 @@ class CurlAdapter extends AbstractAdapter implements OriginCredentialsAwareInter
         }
 
         return $options;
+    }
+
+    /**
+     * Is HTTPS proxy supported by libcurl?
+     *
+     * @return bool
+     */
+    protected function supportsHttpsProxy(): bool
+    {
+        return (bool)(curl_version()['features'] & CURL_VERSION_HTTPS_PROXY);
     }
 }

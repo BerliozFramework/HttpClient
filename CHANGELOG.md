@@ -14,14 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   redirects (`https://auth.example.com`, or `https://*.example.com` for one subdomain level)
 - `OriginCredentialsAwareInterface` for adapters holding their own origin credentials, implemented by `CurlAdapter`
   and `AutoAdapter`
+- `HttpContext` options `proxy_ssl_verify_peer`, `proxy_ssl_verify_host` (enabled by default, independent of the origin
+  `ssl_verify_*` options), `proxy_ssl_cafile` and `proxy_ssl_capath` (default to `ssl_cafile` and `ssl_capath`)
 
 ### Changed
 
 - `QUERY` requests keep their method and body when following a 301 or 302 redirection (RFC 10008, section 2.5);
   only a 303 switches to `GET`
+- Disabling origin TLS verification (`ssl_verify_peer`, `ssl_verify_host`) no longer disables proxy TLS verification;
+  use `proxy_ssl_verify_peer` and `proxy_ssl_verify_host`
+- An unsupported proxy configuration (scheme other than `http`/`https`, missing host, path, query or fragment) is
+  rejected with a `RequestException` before any connection; a proxy without scheme is an `http` proxy
 
 ### Security
 
+- Configured proxy is enforced across adapters (GHSA-3jc3-3r75-xrx6): the cURL adapter now keeps the proxy scheme, so
+  an `https://` proxy is reached over TLS instead of plain HTTP; the stream adapter now connects through the proxy
+  (absolute-form requests, `CONNECT` tunnel for HTTPS origins, data sent by the proxy before the origin TLS handshake
+  rejected) instead of connecting directly to the origin, sends proxy credentials in `Proxy-Authorization` instead of
+  `Authorization`, and rejects HTTPS origins through an HTTPS proxy, which PHP streams cannot handle
 - Origin transport credentials (client certificate, key and passphrases of `HttpContext`, credential options of
   `CurlAdapter` such as `CURLOPT_USERPWD`, `CURLOPT_XOAUTH2_BEARER` or `CURLOPT_COOKIE`) are no longer sent when
   a redirection leaves the initial origin or the approved ones; proxy settings are kept
