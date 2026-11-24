@@ -50,7 +50,7 @@ class StreamAdapter extends AbstractAdapter
         $dateTime = new DateTimeImmutable();
         $initTime = microtime(true);
 
-        $proxy = Proxy::fromContext($context, $request);
+        $proxy = Proxy::resolve($context, $request);
         $fp = $this->createSocketClient($request, $context);
 
         try {
@@ -165,7 +165,7 @@ class StreamAdapter extends AbstractAdapter
      */
     protected function createSocketClient(RequestInterface $request, ?HttpContext $context = null)
     {
-        $proxy = Proxy::fromContext($context, $request);
+        $proxy = Proxy::resolve($context, $request);
         $secure = match ($request->getUri()->getScheme()) {
             'http' => false,
             'https' => true,

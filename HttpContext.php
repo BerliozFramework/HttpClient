@@ -17,7 +17,8 @@ namespace Berlioz\Http\Client;
 class HttpContext
 {
     public function __construct(
-        public string|false $proxy = false,
+        /** Proxy URL, false for no proxy, or null for the proxy of environment ("http_proxy", "https_proxy"...) */
+        public string|false|null $proxy = null,
         public bool $ssl_verify_peer = true,
         public bool $ssl_verify_host = true,
         public ?string $ssl_ciphers = null,

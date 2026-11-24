@@ -16,9 +16,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `AutoAdapter`
 - `HttpContext` options `proxy_ssl_verify_peer`, `proxy_ssl_verify_host` (enabled by default, independent of the origin
   `ssl_verify_*` options), `proxy_ssl_cafile` and `proxy_ssl_capath` (default to `ssl_cafile` and `ssl_capath`)
+- Proxy environment variables are honored identically by the cURL and stream adapters: `https_proxy`/`HTTPS_PROXY`
+  for HTTPS requests, `http_proxy` for HTTP requests (never the uppercase `HTTP_PROXY`, httpoxy),
+  `all_proxy`/`ALL_PROXY` as fallback, and `no_proxy`/`NO_PROXY` exclusions (hosts, domains, IP addresses, CIDR
+  ranges, optional port)
 
 ### Changed
 
+- `HttpContext::$proxy` defaults to `null`, which follows the proxy environment variables in every adapter; `false` now
+  means no proxy at all, including for the cURL adapter, which previously still honored the environment variables
+- The stream adapter now goes through the proxy of the environment variables, it previously always connected directly
+- The cURL adapter resolves the proxy itself: libcurl no longer reads the proxy environment variables, except when a
+  raw `CURLOPT_PROXY` option is given with the default `null` proxy; a configured proxy or `false` takes precedence
+  over a raw `CURLOPT_PROXY` option
+- A proxy of the environment variables with an unsupported scheme (e.g. `ftp://`) is rejected with a
+  `RequestException` naming the variable; SOCKS proxies (`socks4`, `socks4a`, `socks5`, `socks5h`) are still handed
+  over to libcurl by the cURL adapter, and rejected by the stream adapter
+- A proxy of the environment variables without port uses port 80 (`http`) or 443 (`https`), libcurl used 1080
+- The cURL adapter only opens a `CONNECT` tunnel for HTTPS origins; HTTP requests are sent to the proxy in
+  absolute-form, as the stream adapter does
 - `QUERY` requests keep their method and body when following a 301 or 302 redirection (RFC 10008, section 2.5);
   only a 303 switches to `GET`
 - Disabling origin TLS verification (`ssl_verify_peer`, `ssl_verify_host`) no longer disables proxy TLS verification;

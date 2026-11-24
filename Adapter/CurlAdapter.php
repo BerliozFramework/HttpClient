@@ -295,25 +295,46 @@ class CurlAdapter extends AbstractAdapter implements OriginCredentialsAwareInter
             $options[CURLOPT_POSTFIELDS] = (string)$request->getBody();
         }
 
+        // Proxy, resolved here: libcurl must not read the environment by itself.
+        // A raw cURL proxy option takes precedence over the environment, not over a configured or disabled proxy.
+        $proxy = null;
+        if (null !== $context?->proxy || !array_key_exists(CURLOPT_PROXY, $options)) {
+            $options[CURLOPT_PROXY] = '';
+            $options[CURLOPT_HTTPPROXYTUNNEL] = false;
+
+            // SOCKS proxy of environment, not supported by Proxy: handed over to libcurl ("no_proxy" already applied)
+            $socks = null === $context?->proxy ? Proxy::socksFromEnvironment($request) : null;
+            if (null !== $socks) {
+                $options[CURLOPT_PROXY] = $socks;
+                $options[CURLOPT_NOPROXY] = '';
+            } else {
+                $proxy = Proxy::resolve($context, $request);
+            }
+        }
+        if (null !== $proxy) {
+            if ($proxy->isSecure() && !$this->supportsHttpsProxy()) {
+                throw new RequestException('HTTPS proxy is not supported by the installed libcurl', $request);
+            }
+
+            $proxyOptions = [
+                // Tunnel for HTTPS origins only, HTTP requests are sent to the proxy in absolute-form
+                CURLOPT_HTTPPROXYTUNNEL => 'https' === strtolower($request->getUri()->getScheme()),
+                CURLOPT_PROXY => $proxy->getUrl(),
+                CURLOPT_PROXYTYPE => $proxy->isSecure() ? CURLPROXY_HTTPS : CURLPROXY_HTTP,
+                // "no_proxy" already applied
+                CURLOPT_NOPROXY => '',
+                CURLOPT_PROXYUSERNAME => $proxy->user,
+                CURLOPT_PROXYPASSWORD => null !== $proxy->user ? ($proxy->password ?? '') : null,
+                CURLOPT_PROXY_CAINFO => $context->proxy_ssl_cafile ?? $context?->ssl_cafile,
+                CURLOPT_PROXY_CAPATH => $context->proxy_ssl_capath ?? $context?->ssl_capath,
+            ];
+
+            $options = array_replace($options, array_filter($proxyOptions, fn($value) => null !== $value));
+        }
+
         // HTTP Context
         if (null !== $context) {
             $contextOptions = [];
-
-            $proxy = Proxy::fromContext($context, $request);
-
-            $contextOptions[CURLOPT_HTTPPROXYTUNNEL] = null !== $proxy;
-            if (null !== $proxy) {
-                if ($proxy->isSecure() && !$this->supportsHttpsProxy()) {
-                    throw new RequestException('HTTPS proxy is not supported by the installed libcurl', $request);
-                }
-
-                $contextOptions[CURLOPT_PROXY] = $proxy->getUrl();
-                $contextOptions[CURLOPT_PROXYTYPE] = $proxy->isSecure() ? CURLPROXY_HTTPS : CURLPROXY_HTTP;
-                $contextOptions[CURLOPT_PROXYUSERNAME] = $proxy->user;
-                $contextOptions[CURLOPT_PROXYPASSWORD] = null !== $proxy->user ? ($proxy->password ?? '') : null;
-                $contextOptions[CURLOPT_PROXY_CAINFO] = $context->proxy_ssl_cafile ?? $context->ssl_cafile;
-                $contextOptions[CURLOPT_PROXY_CAPATH] = $context->proxy_ssl_capath ?? $context->ssl_capath;
-            }
 
             $contextOptions[CURLOPT_SSL_VERIFYPEER] = $context->ssl_verify_peer;
             $contextOptions[CURLOPT_SSL_VERIFYHOST] = $context->ssl_verify_host ? 2 : 0;
